@@ -42,7 +42,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.sonar.db.component.ComponentTesting.newProjectDto;
 import static org.sonar.db.component.ComponentTesting.newSubView;
-import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.INDEX_TYPE_PROJECT_MEASURES;;
+import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.INDEX_TYPE_PROJECT_MEASURES;
+
+;
 
 public class ProjectMeasuresIndexerTest {
 
@@ -131,6 +133,7 @@ public class ProjectMeasuresIndexerTest {
     String uuid = "PROJECT-UUID";
     esTester.putDocuments(INDEX_TYPE_PROJECT_MEASURES, new ProjectMeasuresDoc()
       .setId(uuid)
+      .setProjectUuid(uuid)
       .setKey("Old Key")
       .setName("Old Name")
       .setAnalysedAt(new Date(1_000_000L)));
@@ -155,19 +158,28 @@ public class ProjectMeasuresIndexerTest {
   public void index_view() {
     ComponentDto view = componentDbTester.insertView();
 
-    underTest.indexProject(view.uuid(), ProjectIndexer.Cause.NEW_ANALYSIS);
+    underTest.indexOnStartup(null);
 
     assertThat(esTester.getIds(INDEX_TYPE_PROJECT_MEASURES)).containsOnly(view.uuid());
   }
 
   @Test
   public void index_sub_view() {
-    ComponentDto view = componentDbTester.insertView();
-    ComponentDto subView = componentDbTester.insertComponent(newSubView(view, "sub uui", "sub key"));
+    ComponentDto view = componentDbTester.insertView("VIEW-UUID");
+    ComponentDto subView = componentDbTester.insertComponent(newSubView(view, "SUB-VIEW-UUID", "sub key"));
 
-    underTest.indexProject(view.uuid(), ProjectIndexer.Cause.NEW_ANALYSIS);
+    underTest.indexOnStartup(null);
 
     assertThat(esTester.getIds(INDEX_TYPE_PROJECT_MEASURES)).containsOnly(view.uuid(), subView.uuid());
+    // Check routing and parent
+    SearchRequestBuilder request = esTester.client()
+      .prepareSearch(INDEX_TYPE_PROJECT_MEASURES)
+      .setQuery(boolQuery().must(matchAllQuery()).filter(
+        boolQuery()
+          .must(termQuery("_id", subView.uuid()))
+          .must(termQuery("_parent", view.uuid()))
+          .must(termQuery("_routing", view.uuid()))));
+    assertThat(request.get().getHits()).hasSize(1);
   }
 
   @Test

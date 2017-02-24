@@ -36,7 +36,6 @@ import org.sonar.api.config.MapSettings;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.api.server.ws.WebService.Param;
 import org.sonar.api.utils.System2;
-import org.sonar.core.util.Uuids;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
@@ -78,6 +77,9 @@ import static org.sonar.api.server.ws.WebService.Param.PAGE;
 import static org.sonar.api.server.ws.WebService.Param.PAGE_SIZE;
 import static org.sonar.api.server.ws.WebService.Param.SORT;
 import static org.sonar.api.utils.DateUtils.formatDateTime;
+import static org.sonar.core.util.Uuids.UUID_EXAMPLE_01;
+import static org.sonar.core.util.Uuids.UUID_EXAMPLE_02;
+import static org.sonar.core.util.Uuids.UUID_EXAMPLE_03;
 import static org.sonar.core.util.stream.Collectors.toList;
 import static org.sonar.db.component.ComponentTesting.newDeveloper;
 import static org.sonar.db.component.ComponentTesting.newDirectory;
@@ -156,16 +158,13 @@ public class SearchProjectsActionTest {
   public void json_example() {
     OrganizationDto organization1Dto = db.organizations().insertForKey("my-org-key-1");
     OrganizationDto organization2Dto = db.organizations().insertForKey("my-org-key-2");
-    ComponentDto project1 = insertProjectInDbAndEs(newProjectDto(organization1Dto)
-      .setUuid(Uuids.UUID_EXAMPLE_01)
+    ComponentDto project1 = insertProjectInDbAndEs(newProjectDto(organization1Dto, UUID_EXAMPLE_01)
       .setKey(KeyExamples.KEY_PROJECT_EXAMPLE_001)
       .setName("My Project 1"));
-    insertProjectInDbAndEs(newProjectDto(organization1Dto)
-      .setUuid(Uuids.UUID_EXAMPLE_02)
+    insertProjectInDbAndEs(newProjectDto(organization1Dto, UUID_EXAMPLE_02)
       .setKey(KeyExamples.KEY_PROJECT_EXAMPLE_002)
       .setName("My Project 2"));
-    insertProjectInDbAndEs(newProjectDto(organization2Dto)
-      .setUuid(Uuids.UUID_EXAMPLE_03)
+    insertProjectInDbAndEs(newProjectDto(organization2Dto, UUID_EXAMPLE_03)
       .setKey(KeyExamples.KEY_PROJECT_EXAMPLE_003)
       .setName("My Project 3"));
     userSession.logIn().setUserId(23);
@@ -302,7 +301,8 @@ public class SearchProjectsActionTest {
     insertProjectInDbAndEs(newProjectDto(organizationDto).setKey("sonarqube").setName("Sonar Qube"));
 
     assertThat(call(request.setFilter("query = \"Groovy\"")).getComponentsList()).extracting(Component::getName).containsOnly("Sonar Groovy");
-    assertThat(call(request.setFilter("query = \"oNar\"")).getComponentsList()).extracting(Component::getName).containsOnly("Sonar Java", "Sonar Groovy", "Sonar Markdown", "Sonar Qube");
+    assertThat(call(request.setFilter("query = \"oNar\"")).getComponentsList()).extracting(Component::getName).containsOnly("Sonar Java", "Sonar Groovy", "Sonar Markdown",
+      "Sonar Qube");
     assertThat(call(request.setFilter("query = \"sonar-java\"")).getComponentsList()).extracting(Component::getName).containsOnly("Sonar Java");
   }
 
@@ -593,6 +593,7 @@ public class SearchProjectsActionTest {
         new ProjectMeasuresDoc()
           .setOrganizationUuid(project.getOrganizationUuid())
           .setId(project.uuid())
+          .setProjectUuid(project.projectUuid())
           .setKey(project.key())
           .setName(project.name())
           .setMeasures(measures)

@@ -42,6 +42,7 @@ import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.FIEL
 import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.FIELD_MEASURES_VALUE;
 import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.FIELD_NAME;
 import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.FIELD_ORGANIZATION_UUID;
+import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.FIELD_PROJECT_UUID;
 import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.FIELD_QUALITY_GATE_STATUS;
 
 public class ProjectMeasuresDoc extends BaseDoc {
@@ -59,16 +60,25 @@ public class ProjectMeasuresDoc extends BaseDoc {
 
   @Override
   public String getRouting() {
-    return getId();
+    return getProjectUuid();
   }
 
   @Override
   public String getParent() {
-    return getId();
+    return getProjectUuid();
   }
 
   public ProjectMeasuresDoc setId(String s) {
     setField("_id", s);
+    return this;
+  }
+
+  public String getProjectUuid() {
+    return getField(FIELD_PROJECT_UUID);
+  }
+
+  public ProjectMeasuresDoc setProjectUuid(String s) {
+    setField(FIELD_PROJECT_UUID, s);
     return this;
   }
 

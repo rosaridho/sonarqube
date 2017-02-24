@@ -94,7 +94,7 @@ public class ProjectMeasuresIndexer implements ProjectIndexer, NeedAuthorization
 
   private void doIndex(BulkIndexer bulk, @Nullable String projectUuid) {
     try (DbSession dbSession = dbClient.openSession(false);
-         ProjectMeasuresIndexerIterator rowIt = ProjectMeasuresIndexerIterator.create(dbSession, projectUuid)) {
+      ProjectMeasuresIndexerIterator rowIt = ProjectMeasuresIndexerIterator.create(dbSession, projectUuid)) {
       doIndex(bulk, rowIt);
     }
   }
@@ -116,8 +116,8 @@ public class ProjectMeasuresIndexer implements ProjectIndexer, NeedAuthorization
   private static IndexRequest newIndexRequest(ProjectMeasuresDoc doc) {
     String projectUuid = doc.getId();
     return new IndexRequest(INDEX_TYPE_PROJECT_MEASURES.getIndex(), INDEX_TYPE_PROJECT_MEASURES.getType(), projectUuid)
-      .routing(projectUuid)
-      .parent(projectUuid)
+      .routing(doc.getRouting())
+      .parent(doc.getParent())
       .source(doc.getFields());
   }
 
@@ -126,6 +126,7 @@ public class ProjectMeasuresIndexer implements ProjectIndexer, NeedAuthorization
     Long analysisDate = project.getAnalysisDate();
     return new ProjectMeasuresDoc()
       .setId(project.getUuid())
+      .setProjectUuid(project.getProjectUuid())
       .setOrganizationUuid(project.getOrganizationUuid())
       .setKey(project.getKey())
       .setName(project.getName())

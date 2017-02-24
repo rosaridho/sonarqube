@@ -117,6 +117,7 @@ public class BackendCleanupTest {
     esTester.putDocuments(RuleIndexDefinition.INDEX_TYPE_RULE, newRuleDoc());
     esTester.putDocuments(ProjectMeasuresIndexDefinition.INDEX_TYPE_PROJECT_MEASURES, new ProjectMeasuresDoc()
       .setId("PROJECT")
+      .setProjectUuid("PROJECT")
       .setKey("Key")
       .setName("Name"));
     esTester.putDocuments(ComponentIndexDefinition.INDEX_TYPE_COMPONENT, newComponentDoc());
