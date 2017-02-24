@@ -63,8 +63,11 @@ public class ProjectMeasuresIndexerIterator extends CloseableIterator<ProjectMea
   private static final Joiner METRICS_JOINER = Joiner.on("','");
 
   private static final String SQL_PROJECTS = "SELECT p.organization_uuid, p.uuid, p.kee, p.name, s.uuid, s.created_at FROM projects p " +
-    "LEFT OUTER JOIN snapshots s ON s.component_uuid=p.uuid AND s.islast=? " +
-    "WHERE p.enabled=? AND p.scope=? AND p.qualifier=?";
+    "LEFT OUTER JOIN snapshots s ON s.component_uuid=p.project_uuid AND s.islast=? " +
+    "WHERE p.enabled=? " +
+    "AND p.scope=? " +
+    "AND p.qualifier in (?, ?, ?) " +
+    "AND p.copy_component_uuid IS NULL ";
 
   private static final String PROJECT_FILTER = " AND p.uuid=?";
 
@@ -148,8 +151,10 @@ public class ProjectMeasuresIndexerIterator extends CloseableIterator<ProjectMea
       stmt.setBoolean(2, true);
       stmt.setString(3, Scopes.PROJECT);
       stmt.setString(4, Qualifiers.PROJECT);
+      stmt.setString(5, Qualifiers.VIEW);
+      stmt.setString(6, Qualifiers.SUBVIEW);
       if (projectUuid != null) {
-        stmt.setString(5, projectUuid);
+        stmt.setString(7, projectUuid);
       }
       return stmt;
     } catch (SQLException e) {

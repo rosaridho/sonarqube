@@ -41,6 +41,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.sonar.db.component.ComponentTesting.newProjectDto;
+import static org.sonar.db.component.ComponentTesting.newSubView;
 import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.INDEX_TYPE_PROJECT_MEASURES;;
 
 public class ProjectMeasuresIndexerTest {
@@ -148,6 +149,25 @@ public class ProjectMeasuresIndexerTest {
           .must(termQuery(ProjectMeasuresIndexDefinition.FIELD_NAME, "New name"))
           .must(termQuery(ProjectMeasuresIndexDefinition.FIELD_ANALYSED_AT, new Date(analysis.getCreatedAt())))));
     assertThat(request.get().getHits()).hasSize(1);
+  }
+
+  @Test
+  public void index_view() {
+    ComponentDto view = componentDbTester.insertView();
+
+    underTest.indexProject(view.uuid(), ProjectIndexer.Cause.NEW_ANALYSIS);
+
+    assertThat(esTester.getIds(INDEX_TYPE_PROJECT_MEASURES)).containsOnly(view.uuid());
+  }
+
+  @Test
+  public void index_sub_view() {
+    ComponentDto view = componentDbTester.insertView();
+    ComponentDto subView = componentDbTester.insertComponent(newSubView(view, "sub uui", "sub key"));
+
+    underTest.indexProject(view.uuid(), ProjectIndexer.Cause.NEW_ANALYSIS);
+
+    assertThat(esTester.getIds(INDEX_TYPE_PROJECT_MEASURES)).containsOnly(view.uuid(), subView.uuid());
   }
 
   @Test

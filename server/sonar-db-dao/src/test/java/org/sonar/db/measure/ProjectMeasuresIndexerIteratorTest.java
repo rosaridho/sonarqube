@@ -49,8 +49,11 @@ import static org.sonar.api.measures.Metric.ValueType.LEVEL;
 import static org.sonar.api.measures.Metric.ValueType.STRING;
 import static org.sonar.db.component.ComponentTesting.newDeveloper;
 import static org.sonar.db.component.ComponentTesting.newProjectDto;
+import static org.sonar.db.component.ComponentTesting.newSubView;
 import static org.sonar.db.component.ComponentTesting.newView;
 import static org.sonar.db.component.SnapshotTesting.newAnalysis;
+import static org.sonar.db.measure.ProjectMeasuresIndexerIterator.Project;
+import static org.sonar.db.measure.ProjectMeasuresIndexerIterator.create;
 
 public class ProjectMeasuresIndexerIteratorTest {
 
@@ -199,16 +202,67 @@ public class ProjectMeasuresIndexerIteratorTest {
     // Disabled project with analysis
     ComponentDto project = dbTester.components().insertComponent(newProjectDto(dbTester.getDefaultOrganization()).setEnabled(false));
     dbClient.snapshotDao().insert(dbSession, newAnalysis(project));
-
-    // A view
-    dbTester.components().insertProjectAndSnapshot(newView(dbTester.getDefaultOrganization()));
-
-    // A developer
-    dbTester.components().insertProjectAndSnapshot(newDeveloper(dbTester.getDefaultOrganization(), "dev"));
-
     dbSession.commit();
 
     assertResultSetIsEmpty();
+  }
+
+  @Test
+  public void does_not_return_developer() throws Exception {
+    // A developer
+    dbTester.components().insertProjectAndSnapshot(newDeveloper(dbTester.getDefaultOrganization(), "dev"));
+
+    assertResultSetIsEmpty();
+  }
+
+  @Test
+  public void return_view_measures() {
+    MetricDto metric1 = insertIntMetric("ncloc");
+    MetricDto metric2 = insertIntMetric("coverage");
+    ComponentDto view = newView(dbTester.getDefaultOrganization()).setKey("View-Key").setName("View Name");
+    SnapshotDto analysis = dbTester.components().insertProjectAndSnapshot(view);
+    insertMeasure(view, analysis, metric1, 10d);
+    insertMeasure(view, analysis, metric2, 20d);
+
+    Map<String, ProjectMeasures> docsById = createResultSetAndReturnDocsById();
+
+    assertThat(docsById).hasSize(1);
+    ProjectMeasures viewDoc = docsById.get(view.uuid());
+    assertThat(docsById.get(view.uuid()).getProject())
+      .extracting(Project::getUuid, Project::getKey, Project::getName, Project::getAnalysisDate)
+      .containsOnly(view.uuid(), "View-Key", "View Name", analysis.getCreatedAt());
+    assertThat(viewDoc.getMeasures().getNumericMeasures()).containsOnly(entry("ncloc", 10d), entry("coverage", 20d));
+  }
+
+  @Test
+  public void return_sub_view_measures() {
+    MetricDto metric1 = insertIntMetric("ncloc");
+    MetricDto metric2 = insertIntMetric("coverage");
+    ComponentDto view = newView(dbTester.getDefaultOrganization());
+    SnapshotDto analysis = dbTester.components().insertProjectAndSnapshot(view);
+    ComponentDto subView = newSubView(view, "Sub-view-uuid", "Suv-view-key").setName("Suv-view-name");
+    dbTester.components().insertComponent(subView);
+    insertMeasure(subView, analysis, metric1, 10d);
+    insertMeasure(subView, analysis, metric2, 20d);
+
+    Map<String, ProjectMeasures> docsById = createResultSetAndReturnDocsById();
+
+    assertThat(docsById).hasSize(2);
+    ProjectMeasures subViewDoc = docsById.get(subView.uuid());
+    assertThat(docsById.get(subView.uuid()).getProject())
+      .extracting(Project::getUuid, Project::getKey, Project::getName, Project::getAnalysisDate)
+      .containsOnly("Sub-view-uuid", "Suv-view-key", "Suv-view-name", analysis.getCreatedAt());
+    assertThat(subViewDoc.getMeasures().getNumericMeasures()).containsOnly(entry("ncloc", 10d), entry("coverage", 20d));
+  }
+
+  @Test
+  public void does_not_return_local_view() throws Exception {
+    ComponentDto view1 = newView(dbTester.getDefaultOrganization());
+    ComponentDto view2 = newView(dbTester.getDefaultOrganization());
+    ComponentDto localView = newSubView(view2, "uuid", "key").setCopyComponentUuid(view1.uuid());
+    dbTester.components().insertComponents(view1, view2, localView);
+
+    assertThat(createResultSetAndReturnDocsById().keySet()).containsOnly(view1.uuid(), view2.uuid());
   }
 
   @Test
@@ -273,7 +327,7 @@ public class ProjectMeasuresIndexerIteratorTest {
     return metric;
   }
 
-  private MeasureDto insertProjectAndMeasure(String projectUuid, MetricDto metric, String value){
+  private MeasureDto insertProjectAndMeasure(String projectUuid, MetricDto metric, String value) {
     ComponentDto project = newProjectDto(dbTester.getDefaultOrganization(), projectUuid);
     SnapshotDto analysis1 = dbTester.components().insertProjectAndSnapshot(project);
     return insertMeasure(project, analysis1, metric, value);

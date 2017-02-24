@@ -47,14 +47,17 @@ import org.sonar.server.tester.UserSessionRule;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Sets.newHashSet;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.sonar.api.measures.CoreMetrics.ALERT_STATUS_KEY;
 import static org.sonar.api.measures.CoreMetrics.COVERAGE_KEY;
+import static org.sonar.api.measures.CoreMetrics.NCLOC_KEY;
 import static org.sonar.api.measures.Metric.Level.ERROR;
 import static org.sonar.api.measures.Metric.Level.OK;
 import static org.sonar.api.measures.Metric.Level.WARN;
 import static org.sonar.db.component.ComponentTesting.newProjectDto;
+import static org.sonar.db.component.ComponentTesting.newView;
 import static org.sonar.db.user.GroupTesting.newGroupDto;
 import static org.sonar.db.user.UserTesting.newUserDto;
 import static org.sonar.server.measure.index.ProjectMeasuresIndexDefinition.INDEX_TYPE_PROJECT_MEASURES;
@@ -1013,6 +1016,18 @@ public class ProjectMeasuresIndexTest {
     assertThat(result).containsOnly(
       entry("java", 7L),
       entry("xoo", 5L));
+  }
+
+  @Test
+  public void return_views() throws Exception {
+    ComponentDto view1 = newView(ORG);
+    ComponentDto view2 = newView(ORG);
+    index(
+      newDoc(view1).setMeasures(singletonList(newMeasure(NCLOC, 15_000d))),
+      newDoc(view2).setMeasures(singletonList(newMeasure(NCLOC, 20_000d))));
+
+    assertResults(new ProjectMeasuresQuery(), view1, view2);
+    assertResults(new ProjectMeasuresQuery().addMetricCriterion(new MetricCriterion(NCLOC_KEY, Operator.GT, 17_000d)), view2);
   }
 
   private void index(ProjectMeasuresDoc... docs) {
