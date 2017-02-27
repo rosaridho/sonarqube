@@ -104,7 +104,7 @@ public class ProjectMeasuresQueryFactoryTest {
   @Test
   public void fail_to_create_query_on_quality_gate_when_operator_is_not_equal() throws Exception {
     expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Only equals operator is available for quality gate criteria");
+    expectedException.expectMessage("Only equals operator is available for alert_status criteria");
 
     newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("alert_status").setOperator(GT).setValue("OK").build()), emptySet());
   }
@@ -138,7 +138,7 @@ public class ProjectMeasuresQueryFactoryTest {
   @Test
   public void fail_to_create_query_on_language_using_in_operator_and_value() throws Exception {
     expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Language should be set either by using 'language = java' or 'language IN (java, js)");
+    expectedException.expectMessage("Language should be set either by using 'language = java' or 'language IN (java, js)'");
 
     newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("language").setOperator(IN).setValue("java").build()),
       emptySet());
@@ -147,7 +147,7 @@ public class ProjectMeasuresQueryFactoryTest {
   @Test
   public void fail_to_create_query_on_language_using_eq_operator_and_values() throws Exception {
     expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Language should be set either by using 'language = java' or 'language IN (java, js)");
+    expectedException.expectMessage("Language should be set either by using 'language = java' or 'language IN (java, js)'");
 
     newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("language").setOperator(EQ).setValues(asList("java")).build()),
       emptySet());

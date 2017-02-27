@@ -24,8 +24,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonar.api.measures.Metric.Level;
+import org.sonar.server.component.ws.FilterParser.Criterion;
 import org.sonar.server.component.ws.FilterParser.Operator;
 import org.sonar.server.measure.index.ProjectMeasuresQuery;
 
@@ -41,49 +43,41 @@ import static org.sonarqube.ws.client.project.ProjectsWsParameters.FILTER_LANGUA
 
 class ProjectMeasuresQueryFactory {
 
-  public static final String IS_FAVORITE_CRITERION = "isFavorite";
+  public static final String IS_FAVORITE_CRITERION = "isfavorite";
   public static final String QUERY_KEY = "query";
 
   private ProjectMeasuresQueryFactory() {
     // prevent instantiation
   }
 
-  static ProjectMeasuresQuery newProjectMeasuresQuery(List<FilterParser.Criterion> criteria, @Nullable Set<String> projectUuids) {
+  static ProjectMeasuresQuery newProjectMeasuresQuery(List<Criterion> criteria, @Nullable Set<String> projectUuids) {
     ProjectMeasuresQuery query = new ProjectMeasuresQuery();
     Optional.ofNullable(projectUuids).ifPresent(query::setProjectUuids);
     criteria.forEach(criterion -> processCriterion(criterion, query));
     return query;
   }
 
-  private static void processCriterion(FilterParser.Criterion criterion, ProjectMeasuresQuery query) {
+  private static void processCriterion(Criterion criterion, ProjectMeasuresQuery query) {
     String key = criterion.getKey().toLowerCase(ENGLISH);
-    if (IS_FAVORITE_CRITERION.equalsIgnoreCase(key)) {
-      return;
-    }
-
-    Operator operator = criterion.getOperator();
-    checkArgument(operator != null, "Operator cannot be null for '%s'", key);
-    if (FILTER_LANGUAGE.equalsIgnoreCase(key)) {
-      processLanguages(criterion, query);
-      return;
-    }
-
-    if (QUERY_KEY.equalsIgnoreCase(key)) {
-      processQuery(criterion, query);
-      return;
-    }
-
-    String value = criterion.getValue();
-    checkArgument(value != null, "Value cannot be null for '%s'", key);
-    if (ALERT_STATUS_KEY.equals(key)) {
-      processQualityGateStatus(criterion, query);
-    } else {
-      query.addMetricCriterion(new MetricCriterion(key, operator, parseValue(value)));
+    switch (key) {
+      case IS_FAVORITE_CRITERION:
+        break;
+      case FILTER_LANGUAGE:
+        processLanguages(criterion, query);
+        break;
+      case QUERY_KEY:
+        processQuery(criterion, query);
+        break;
+      case ALERT_STATUS_KEY:
+        processQualityGate(criterion, query);
+        break;
+      default:
+        query.addMetricCriterion(new MetricCriterion(key, getNonNullOperator(criterion), parseValue(getNonNullValue(criterion))));
     }
   }
 
-  private static void processLanguages(FilterParser.Criterion criterion, ProjectMeasuresQuery query) {
-    Operator operator = criterion.getOperator();
+  private static void processLanguages(Criterion criterion, ProjectMeasuresQuery query) {
+    Operator operator = getNonNullOperator(criterion);
     String value = criterion.getValue();
     List<String> values = criterion.getValues();
     if (value != null && EQ.equals(operator)) {
@@ -97,21 +91,29 @@ class ProjectMeasuresQueryFactory {
     throw new IllegalArgumentException("Language should be set either by using 'language = java' or 'language IN (java, js)'");
   }
 
-  private static void processQuery(FilterParser.Criterion criterion, ProjectMeasuresQuery query) {
-    Operator operatorValue = criterion.getOperator();
+  private static void processQuery(Criterion criterion, ProjectMeasuresQuery query) {
+    Operator operatorValue = getNonNullOperator(criterion);
     String value = criterion.getValue();
     checkArgument(value != null, "Query is invalid");
     checkArgument(EQ.equals(operatorValue), "Query should only be used with equals operator");
     query.setQueryText(value);
   }
 
-  private static void processQualityGateStatus(FilterParser.Criterion criterion, ProjectMeasuresQuery query) {
-    Operator operator = criterion.getOperator();
-    String value = criterion.getValue();
-    checkArgument(EQ.equals(operator), "Only equals operator is available for quality gate criteria");
-    Arrays.stream(Level.values()).filter(level -> level.name().equalsIgnoreCase(value)).findFirst()
-      .orElseThrow(() -> new IllegalArgumentException(format("Unknown quality gate status : '%s'", value)));
-    query.setQualityGateStatus(Level.valueOf(value));
+  private static void processQualityGate(Criterion criterion, ProjectMeasuresQuery query) {
+    String value = getNonNullValue(criterion);
+    processOnlyEqualsCriterion(criterion, ALERT_STATUS_KEY, qualityGate -> {
+      Arrays.stream(Level.values())
+        .filter(level -> level.name().equalsIgnoreCase(value)).findFirst()
+        .orElseThrow(() -> new IllegalArgumentException(format("Unknown quality gate status : '%s'", value)));
+      query.setQualityGateStatus(Level.valueOf(value));
+    });
+  }
+
+  private static void processOnlyEqualsCriterion(Criterion criterion, String key, Consumer<String> consumer) {
+    Operator operator = getNonNullOperator(criterion);
+    String value = getNonNullValue(criterion);
+    checkArgument(EQ.equals(operator), "Only equals operator is available for %s criteria", key);
+    consumer.accept(value);
   }
 
   private static double parseValue(String value) {
@@ -120,6 +122,19 @@ class ProjectMeasuresQueryFactory {
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException(format("Value '%s' is not a number", value));
     }
+  }
+
+  private static String getNonNullValue(Criterion criterion) {
+    return checkNonNull(criterion.getValue(), "Value", criterion.getKey());
+  }
+
+  private static Operator getNonNullOperator(Criterion criterion) {
+    return checkNonNull(criterion.getOperator(), "Operator", criterion.getKey());
+  }
+
+  private static <OBJECT> OBJECT checkNonNull(@Nullable OBJECT value, String label, String key) {
+    checkArgument(value != null, "%s cannot be null for '%s'", label, key);
+    return value;
   }
 
 }
