@@ -336,7 +336,6 @@ public class ProjectMeasuresIndexTest {
   @Test
   public void filter_on_ids() {
     index(
-      newDoc(PROJECT1),
       newDoc(PROJECT2),
       newDoc(PROJECT3));
 

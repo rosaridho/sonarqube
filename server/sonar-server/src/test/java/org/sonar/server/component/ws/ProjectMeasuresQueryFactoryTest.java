@@ -102,6 +102,14 @@ public class ProjectMeasuresQueryFactoryTest {
   }
 
   @Test
+  public void create_query_on_quality_gate_ignore_case_sensitive() throws Exception {
+    ProjectMeasuresQuery query = newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("alert_status").setOperator(EQ).setValue("ok").build()),
+      emptySet());
+
+    assertThat(query.getQualityGateStatus().get().name()).isEqualTo(OK.name());
+  }
+
+  @Test
   public void fail_to_create_query_on_quality_gate_when_operator_is_not_equal() throws Exception {
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage("Only equals operator is available for alert_status criteria");
@@ -138,7 +146,7 @@ public class ProjectMeasuresQueryFactoryTest {
   @Test
   public void fail_to_create_query_on_language_using_in_operator_and_value() throws Exception {
     expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Language should be set either by using 'language = java' or 'language IN (java, js)'");
+    expectedException.expectMessage("language should be set either by using 'language = value' or 'language IN (v1, v2)'");
 
     newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("language").setOperator(IN).setValue("java").build()),
       emptySet());
@@ -147,7 +155,7 @@ public class ProjectMeasuresQueryFactoryTest {
   @Test
   public void fail_to_create_query_on_language_using_eq_operator_and_values() throws Exception {
     expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Language should be set either by using 'language = java' or 'language IN (java, js)'");
+    expectedException.expectMessage("language should be set either by using 'language = value' or 'language IN (v1, v2)'");
 
     newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("language").setOperator(EQ).setValues(asList("java")).build()),
       emptySet());
@@ -186,6 +194,51 @@ public class ProjectMeasuresQueryFactoryTest {
     expectedException.expectMessage("Query should only be used with equals operator");
 
     newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("query").setOperator(LT).setValue("java").build()),
+      emptySet());
+  }
+
+  @Test
+  public void create_query_on_qualifier_using_in_operator() throws Exception {
+    List<Criterion> criteria = singletonList(Criterion.builder().setKey("qualifier").setOperator(IN).setValues(asList("TRK", "VW")).build());
+
+    ProjectMeasuresQuery underTest = newProjectMeasuresQuery(criteria, emptySet());
+
+    assertThat(underTest.getQualifiers()).containsOnly("TRK", "VW");
+  }
+
+  @Test
+  public void create_query_on_qualifier_using_equals_operator() throws Exception {
+    List<Criterion> criteria = singletonList(Criterion.builder().setKey("qualifier").setOperator(EQ).setValue("TRK").build());
+
+    ProjectMeasuresQuery underTest = newProjectMeasuresQuery(criteria, emptySet());
+
+    assertThat(underTest.getQualifiers()).containsOnly("TRK");
+  }
+
+  @Test
+  public void create_query_with_qualifier_ignore_case_sensitive() throws Exception {
+    List<Criterion> criteria = singletonList(Criterion.builder().setKey("qualifier").setOperator(EQ).setValue("trk").build());
+
+    ProjectMeasuresQuery underTest = newProjectMeasuresQuery(criteria, emptySet());
+
+    assertThat(underTest.getQualifiers()).containsOnly("TRK");
+  }
+
+  @Test
+  public void fail_to_create_query_having_qualifier_with_other_operator_than_equals() throws Exception {
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("qualifier should be set either by using 'qualifier = value' or 'qualifier IN (v1, v2)'");
+
+    newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("qualifier").setOperator(LT).setValue("TRK").build()),
+      emptySet());
+  }
+
+  @Test
+  public void fail_to_create_query_having_unknown_qualifier() throws Exception {
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("Only [TRK, VW, SVW] values are available for qualifier criteria");
+
+    newProjectMeasuresQuery(singletonList(Criterion.builder().setKey("qualifier").setOperator(EQ).setValue("FIL").build()),
       emptySet());
   }
 

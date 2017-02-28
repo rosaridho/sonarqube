@@ -307,6 +307,17 @@ public class SearchProjectsActionTest {
   }
 
   @Test
+  public void filter_result_by_qualifiers() {
+    insertProjectInDbAndEs(newProjectDto(db.getDefaultOrganization()).setName("Sonar Java"), newArrayList(newMeasure(COVERAGE, 81d)));
+    insertProjectInDbAndEs(newView(db.getDefaultOrganization()).setName("All projects"), newArrayList(newMeasure(COVERAGE, 54d)));
+    insertMetrics(COVERAGE);
+
+    assertThat(call(request.setFilter("qualifier IN (TRK)")).getComponentsList()).extracting(Component::getName).containsOnly("Sonar Java");
+    assertThat(call(request.setFilter("qualifier IN (VW)")).getComponentsList()).extracting(Component::getName).containsOnly("All projects");
+    assertThat(call(request.setFilter("qualifier IN (TRK, VW)")).getComponentsList()).extracting(Component::getName).containsOnly("All projects", "Sonar Java");
+  }
+
+  @Test
   public void filter_favourite_projects_with_query_with_or_without_a_specified_organization() {
     userSession.logIn();
     OrganizationDto organization1 = db.organizations().insert();

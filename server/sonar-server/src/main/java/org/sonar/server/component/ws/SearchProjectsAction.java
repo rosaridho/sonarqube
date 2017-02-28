@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
@@ -66,6 +65,7 @@ import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static org.sonar.api.measures.CoreMetrics.ALERT_STATUS_KEY;
 import static org.sonar.api.measures.CoreMetrics.NCLOC_KEY;
+import static org.sonar.api.resources.Qualifiers.PROJECT;
 import static org.sonar.api.server.ws.WebService.Param.FIELDS;
 import static org.sonar.core.util.stream.Collectors.toSet;
 import static org.sonar.server.component.ws.ProjectMeasuresQueryFactory.IS_FAVORITE_CRITERION;
@@ -119,7 +119,7 @@ public class SearchProjectsAction implements ComponentsWsAction {
       .setPossibleValues(SUPPORTED_FACETS);
     action
       .createParam(PARAM_FILTER)
-      .setDescription("Filter of projects on name, key, measure value, quality gate, language, or whether a project is a favorite or not.<br>" +
+      .setDescription("Filter of projects on name, key, measure value, quality gate, language, qualifier, or whether a project is a favorite or not.<br>" +
         "The filter must be encoded to form a valid URL (for example '=' must be replaced by '%3D').<br>" +
         "Examples of use:" +
         "<ul>" +
@@ -149,12 +149,13 @@ public class SearchProjectsAction implements ComponentsWsAction {
         " <li>'WARN' for Warning</li>" +
         " <li>'ERROR' for Failed</li>" +
         "</ul>" +
-        "To filter on language keys use language key' : " +
+        "To filter on language keys use language key : " +
         "<ul>" +
         " <li>To filter on a single language you can use 'language = java'</li>" +
         " <li>To filter on a many language you must use 'language IN (java, js)'</li>" +
         "<ul/>" +
-        "Use the WS api/languages/list to find the key of a language.");
+        "Use the WS api/languages/list to find the key of a language.<br>" +
+        "To filter on a qualifier use the key 'qualifier'. Available values are 'TRK', 'VW' and 'SVW'. Only the '=' operator can be used.");
     action.createParam(Param.SORT)
       .setDescription("Sort projects by numeric metric key, quality gate status (using '%s'), or by project name.<br/>" +
         "See '%s' parameter description for the possible metric values", ALERT_STATUS_KEY, PARAM_FILTER)
@@ -249,7 +250,7 @@ public class SearchProjectsAction implements ComponentsWsAction {
 
     return dbClient.componentDao().selectByIds(dbSession, favoriteDbIds).stream()
       .filter(ComponentDto::isEnabled)
-      .filter(f -> f.qualifier().equals(Qualifiers.PROJECT))
+      .filter(f -> f.qualifier().equals(PROJECT))
       .map(ComponentDto::uuid)
       .collect(Collectors.toSet());
   }
