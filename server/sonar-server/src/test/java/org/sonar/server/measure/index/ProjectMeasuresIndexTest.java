@@ -47,12 +47,10 @@ import org.sonar.server.tester.UserSessionRule;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Sets.newHashSet;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.sonar.api.measures.CoreMetrics.ALERT_STATUS_KEY;
 import static org.sonar.api.measures.CoreMetrics.COVERAGE_KEY;
-import static org.sonar.api.measures.CoreMetrics.NCLOC_KEY;
 import static org.sonar.api.measures.Metric.Level.ERROR;
 import static org.sonar.api.measures.Metric.Level.OK;
 import static org.sonar.api.measures.Metric.Level.WARN;
@@ -288,7 +286,7 @@ public class ProjectMeasuresIndexTest {
       newDoc(project4).setLanguages(ImmutableMap.of("<null>", 10, "java", 2, "xoo", 12)));
 
     assertResults(new ProjectMeasuresQuery().setLanguages(newHashSet("java", "xoo")), PROJECT1, PROJECT2, PROJECT3, project4);
-    assertResults(new ProjectMeasuresQuery().setLanguages(newHashSet("java")), PROJECT1,project4);
+    assertResults(new ProjectMeasuresQuery().setLanguages(newHashSet("java")), PROJECT1, project4);
     assertResults(new ProjectMeasuresQuery().setLanguages(newHashSet("unknown")));
   }
 
@@ -303,6 +301,36 @@ public class ProjectMeasuresIndexTest {
     assertResults(new ProjectMeasuresQuery().setQueryText("windows"), windows);
     assertResults(new ProjectMeasuresQuery().setQueryText("project2"), apachee);
     assertResults(new ProjectMeasuresQuery().setQueryText("pAch"), apache1, apache2, apachee);
+  }
+
+  @Test
+  public void filter_on_qualifiers() {
+    ComponentDto view = newView(ORG).setName("View");
+    ComponentDto subView = newSubView(view, "sub uuid", "sub key").setName("Sub view");
+    index(
+      newDoc(PROJECT1),
+      newDoc(PROJECT2),
+      newDoc(view),
+      newDoc(subView));
+
+    assertResults(new ProjectMeasuresQuery().setQualifiers(newHashSet("TRK")), PROJECT1, PROJECT2);
+    assertResults(new ProjectMeasuresQuery().setQualifiers(newHashSet("VW")), view);
+    assertResults(new ProjectMeasuresQuery().setQualifiers(newHashSet("SVW")), subView);
+    assertResults(new ProjectMeasuresQuery().setQualifiers(newHashSet("TRK", "VW", "SVW")), PROJECT1, PROJECT2, subView, view);
+    assertResults(new ProjectMeasuresQuery().setQualifiers(newHashSet("unknown")));
+  }
+
+  @Test
+  public void filter_on_TRK_qualifier_by_default() {
+    ComponentDto view = newView(ORG).setName("View");
+    ComponentDto subView = newSubView(view, "sub uuid", "sub key").setName("Sub view");
+    index(
+      newDoc(PROJECT1),
+      newDoc(PROJECT2),
+      newDoc(view),
+      newDoc(subView));
+
+    assertResults(new ProjectMeasuresQuery(), PROJECT1, PROJECT2);
   }
 
   @Test
@@ -1019,30 +1047,6 @@ public class ProjectMeasuresIndexTest {
       entry("xoo", 5L));
   }
 
-  @Test
-  public void return_views() throws Exception {
-    ComponentDto view1 = newView(ORG);
-    ComponentDto view2 = newView(ORG);
-    index(
-      newDoc(view1).setMeasures(singletonList(newMeasure(NCLOC, 15_000d))),
-      newDoc(view2).setMeasures(singletonList(newMeasure(NCLOC, 20_000d))));
-
-    assertResults(new ProjectMeasuresQuery(), view1, view2);
-    assertResults(new ProjectMeasuresQuery().addMetricCriterion(new MetricCriterion(NCLOC_KEY, Operator.GT, 17_000d)), view2);
-  }
-
-  @Test
-  public void return_sub_views() throws Exception {
-    ComponentDto view = newView(ORG);
-    ComponentDto subView = newSubView(view, "sub uuid", "sub key");
-    index(
-      newDoc(view).setMeasures(singletonList(newMeasure(NCLOC, 15_000d))),
-      newDoc(subView).setMeasures(singletonList(newMeasure(NCLOC, 20_000d))));
-
-    assertResults(new ProjectMeasuresQuery(), view, subView);
-    assertResults(new ProjectMeasuresQuery().addMetricCriterion(new MetricCriterion(NCLOC_KEY, Operator.GT, 17_000d)), subView);
-  }
-
   private void index(ProjectMeasuresDoc... docs) {
     es.putDocuments(INDEX_TYPE_PROJECT_MEASURES, docs);
     for (ProjectMeasuresDoc doc : docs) {
@@ -1076,7 +1080,8 @@ public class ProjectMeasuresIndexTest {
       .setProjectUuid(project.projectUuid())
       .setId(project.uuid())
       .setKey(project.key())
-      .setName(project.name());
+      .setName(project.name())
+      .setQualifier(project.qualifier());
   }
 
   private static ProjectMeasuresDoc newDoc() {

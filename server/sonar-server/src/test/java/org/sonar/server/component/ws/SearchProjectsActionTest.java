@@ -596,6 +596,7 @@ public class SearchProjectsActionTest {
           .setProjectUuid(project.projectUuid())
           .setKey(project.key())
           .setName(project.name())
+          .setQualifier(project.qualifier())
           .setMeasures(measures)
           .setQualityGateStatus(qualityGateStatus)
           .setLanguages(languagesDistribution));

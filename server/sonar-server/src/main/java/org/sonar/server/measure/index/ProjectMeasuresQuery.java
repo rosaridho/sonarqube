@@ -19,6 +19,7 @@
  */
 package org.sonar.server.measure.index;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -27,12 +28,14 @@ import javax.annotation.Nullable;
 import org.sonar.api.measures.Metric;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonar.api.resources.Qualifiers.PROJECT;
 import static org.sonar.server.component.ws.FilterParser.Operator;
 
 public class ProjectMeasuresQuery {
 
   public static final String SORT_BY_NAME = "name";
 
+  private Set<String> qualifiers = ImmutableSet.of(PROJECT);
   private List<MetricCriterion> metricCriteria = new ArrayList<>();
   private Metric.Level qualityGateStatus;
   private String organizationUuid;
@@ -41,6 +44,15 @@ public class ProjectMeasuresQuery {
   private String sort = SORT_BY_NAME;
   private boolean asc = true;
   private String queryText;
+
+  public Set<String> getQualifiers() {
+    return qualifiers;
+  }
+
+  public ProjectMeasuresQuery setQualifiers(Set<String> qualifiers) {
+    this.qualifiers = ImmutableSet.copyOf(requireNonNull(qualifiers, "Qualifiers cannot be null"));
+    return this;
+  }
 
   public ProjectMeasuresQuery addMetricCriterion(MetricCriterion metricCriterion) {
     this.metricCriteria.add(metricCriterion);

@@ -19,6 +19,7 @@
  */
 package org.sonar.server.measure.index;
 
+import com.google.common.collect.ImmutableSet;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -58,6 +59,26 @@ public class ProjectMeasuresQueryTest {
     underTest.setQualityGateStatus(OK);
 
     assertThat(underTest.getQualityGateStatus().get()).isEqualTo(Level.OK);
+  }
+
+  @Test
+  public void set_qualifiers() throws Exception {
+    underTest.setQualifiers(ImmutableSet.of("VW", "SVW"));
+
+    assertThat(underTest.getQualifiers()).containsOnly("VW", "SVW");
+  }
+
+  @Test
+  public void default_qualifiers_is_project() throws Exception {
+    assertThat(underTest.getQualifiers()).containsOnly("TRK");
+  }
+
+  @Test
+  public void fail_to_set_null_qualifier() throws Exception {
+    expectedException.expect(NullPointerException.class);
+    expectedException.expectMessage("Qualifiers cannot be null");
+
+    underTest.setQualifiers(null);
   }
 
   @Test

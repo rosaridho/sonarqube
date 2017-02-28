@@ -62,7 +62,7 @@ public class ProjectMeasuresIndexerIterator extends CloseableIterator<ProjectMea
 
   private static final Joiner METRICS_JOINER = Joiner.on("','");
 
-  private static final String SQL_PROJECTS = "SELECT p.organization_uuid, p.uuid, p.project_uuid, p.kee, p.name, s.uuid, s.created_at FROM projects p " +
+  private static final String SQL_PROJECTS = "SELECT p.organization_uuid, p.uuid, p.project_uuid, p.kee, p.name, p.qualifier, s.uuid, s.created_at FROM projects p " +
     "LEFT OUTER JOIN snapshots s ON s.component_uuid=p.project_uuid AND s.islast=? " +
     "WHERE p.enabled=? " +
     "AND p.scope=? " +
@@ -132,9 +132,10 @@ public class ProjectMeasuresIndexerIterator extends CloseableIterator<ProjectMea
         String projectUuid = rs.getString(3);
         String key = rs.getString(4);
         String name = rs.getString(5);
-        String analysisUuid = DatabaseUtils.getString(rs, 6);
-        Long analysisDate = DatabaseUtils.getLong(rs, 7);
-        Project project = new Project(orgUuid, uuid, projectUuid, key, name, analysisUuid, analysisDate);
+        String qualifier = rs.getString(6);
+        String analysisUuid = DatabaseUtils.getString(rs, 7);
+        Long analysisDate = DatabaseUtils.getLong(rs, 8);
+        Project project = new Project(orgUuid, uuid, projectUuid, key, name, qualifier, analysisUuid, analysisDate);
         projects.add(project);
       }
       return projects;
@@ -258,15 +259,18 @@ public class ProjectMeasuresIndexerIterator extends CloseableIterator<ProjectMea
     private final String projectUuid;
     private final String key;
     private final String name;
+    private final String qualifier;
     private final String analysisUuid;
     private final Long analysisDate;
 
-    public Project(String organizationUuid, String uuid, String projectUuid, String key, String name, @Nullable String analysisUuid, @Nullable Long analysisDate) {
+    public Project(String organizationUuid, String uuid, String projectUuid, String key, String name, String qualifier, @Nullable String analysisUuid,
+      @Nullable Long analysisDate) {
       this.organizationUuid = organizationUuid;
       this.uuid = uuid;
       this.projectUuid = projectUuid;
       this.key = key;
       this.name = name;
+      this.qualifier = qualifier;
       this.analysisUuid = analysisUuid;
       this.analysisDate = analysisDate;
     }
@@ -289,6 +293,10 @@ public class ProjectMeasuresIndexerIterator extends CloseableIterator<ProjectMea
 
     public String getName() {
       return name;
+    }
+
+    public String getQualifier() {
+      return qualifier;
     }
 
     @CheckForNull
