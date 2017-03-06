@@ -20,6 +20,7 @@
 package org.sonar.core.platform;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -170,8 +171,12 @@ public class ComponentContainer implements ContainerPopulator.Container {
   }
 
   public ComponentContainer stopComponents(boolean swallowException) {
+    Lists.reverse(new ArrayList<>(this.children))
+      .forEach(ComponentContainer::stopComponents);
     try {
-      pico.stop();
+      if (pico.getLifecycleState().isStarted()) {
+        pico.stop();
+      }
       pico.dispose();
 
     } catch (RuntimeException e) {
@@ -179,7 +184,6 @@ public class ComponentContainer implements ContainerPopulator.Container {
         throw PicoUtils.propagate(e);
       }
     } finally {
-      removeChildren();
       if (parent != null) {
         parent.removeChild(this);
       }
@@ -298,13 +302,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
   }
 
   private ComponentContainer removeChildren() {
-    Iterator<ComponentContainer> childrenIterator = children.iterator();
-    while (childrenIterator.hasNext()) {
-      ComponentContainer child = childrenIterator.next();
-      if (pico.removeChildContainer(child.pico)) {
-        childrenIterator.remove();
-      }
-    }
+    children.removeIf(child -> pico.removeChildContainer(child.pico));
     return this;
   }
 
