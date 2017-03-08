@@ -27,12 +27,6 @@ public class ProcessUtils {
     // only static stuff
   }
 
-  public static void awaitTermination(Thread... threads) {
-    for (Thread thread : threads) {
-      awaitTermination(thread);
-    }
-  }
-
   public static void awaitTermination(@Nullable Thread t) {
     if (t == null || Thread.currentThread() == t) {
       return;
@@ -43,6 +37,7 @@ public class ProcessUtils {
         t.join();
       } catch (InterruptedException e) {
         // ignore, keep on waiting for t to stop
+        Thread.currentThread().interrupt();
       }
     }
   }
