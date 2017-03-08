@@ -34,7 +34,7 @@ import org.junit.rules.TemporaryFolder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 
-public class FileUtilsTest {
+public class FileUtils2Test {
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule
@@ -44,12 +44,12 @@ public class FileUtilsTest {
   public void cleanDirectory_throws_NPE_if_file_is_null() throws IOException {
     expectDirectoryCanNotBeNullNPE();
 
-    FileUtils.cleanDirectory(null);
+    FileUtils2.cleanDirectory(null);
   }
 
   @Test
   public void cleanDirectory_does_nothing_if_argument_does_not_exist() throws IOException {
-    FileUtils.cleanDirectory(new File("/a/b/ToDoSSS"));
+    FileUtils2.cleanDirectory(new File("/a/b/ToDoSSS"));
   }
 
   @Test
@@ -59,7 +59,7 @@ public class FileUtilsTest {
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage("'" + file.getAbsolutePath() + "' is not a directory");
 
-    FileUtils.cleanDirectory(file);
+    FileUtils2.cleanDirectory(file);
   }
 
   @Test
@@ -79,7 +79,7 @@ public class FileUtilsTest {
     // on supporting FileSystem, target will change if directory is recreated
     Object targetKey = getFileKey(target);
 
-    FileUtils.cleanDirectory(target.toFile());
+    FileUtils2.cleanDirectory(target.toFile());
 
     assertThat(target).isDirectory();
     assertThat(childFile1).doesNotExist();
@@ -110,7 +110,7 @@ public class FileUtilsTest {
     Object targetKey = getFileKey(target);
     Object symLinkKey = getFileKey(symToDir);
 
-    FileUtils.cleanDirectory(symToDir.toFile());
+    FileUtils2.cleanDirectory(symToDir.toFile());
 
     assertThat(target).isDirectory();
     assertThat(symToDir).isSymbolicLink();
@@ -124,7 +124,7 @@ public class FileUtilsTest {
 
   @Test
   public void deleteQuietly_does_not_fail_if_argument_is_null() {
-    FileUtils.deleteQuietly(null);
+    FileUtils2.deleteQuietly(null);
   }
 
   @Test
@@ -132,7 +132,7 @@ public class FileUtilsTest {
     File file = new File(temporaryFolder.newFolder(), "blablabl");
     assertThat(file).doesNotExist();
 
-    FileUtils.deleteQuietly(file);
+    FileUtils2.deleteQuietly(file);
   }
 
   @Test
@@ -149,7 +149,7 @@ public class FileUtilsTest {
     assertThat(childFile2).isRegularFile();
     assertThat(childDir2).isDirectory();
 
-    FileUtils.deleteQuietly(target.toFile());
+    FileUtils2.deleteQuietly(target.toFile());
 
     assertThat(target).doesNotExist();
     assertThat(childFile1).doesNotExist();
@@ -168,7 +168,7 @@ public class FileUtilsTest {
     assertThat(file1).isRegularFile();
     assertThat(symLink).isSymbolicLink();
 
-    FileUtils.deleteQuietly(symLink.toFile());
+    FileUtils2.deleteQuietly(symLink.toFile());
 
     assertThat(symLink).doesNotExist();
     assertThat(file1).isRegularFile();
@@ -178,14 +178,14 @@ public class FileUtilsTest {
   public void deleteDirectory_throws_NPE_if_argument_is_null() throws IOException {
     expectDirectoryCanNotBeNullNPE();
 
-    FileUtils.deleteDirectory(null);
+    FileUtils2.deleteDirectory(null);
   }
 
   @Test
   public void deleteDirectory_does_not_fail_if_file_does_not_exist() throws IOException {
     File file = new File(temporaryFolder.newFolder(), "foo.d");
 
-    FileUtils.deleteDirectory(file);
+    FileUtils2.deleteDirectory(file);
   }
 
   @Test
@@ -195,7 +195,7 @@ public class FileUtilsTest {
     expectedException.expect(IOException.class);
     expectedException.expectMessage("Directory '" + file.getAbsolutePath() + "' is a file");
 
-    FileUtils.deleteDirectory(file);
+    FileUtils2.deleteDirectory(file);
   }
 
   @Test
@@ -211,7 +211,7 @@ public class FileUtilsTest {
     expectedException.expect(IOException.class);
     expectedException.expectMessage("Directory '" + symLink.toFile().getAbsolutePath() + "' is a symbolic link");
 
-    FileUtils.deleteDirectory(symLink.toFile());
+    FileUtils2.deleteDirectory(symLink.toFile());
   }
 
   @Test
@@ -228,7 +228,7 @@ public class FileUtilsTest {
     assertThat(childFile2).isRegularFile();
     assertThat(childDir2).isDirectory();
 
-    FileUtils.deleteQuietly(target.toFile());
+    FileUtils2.deleteQuietly(target.toFile());
 
     assertThat(target).doesNotExist();
     assertThat(childFile1).doesNotExist();

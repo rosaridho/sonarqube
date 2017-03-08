@@ -37,11 +37,11 @@ import static java.util.Objects.requireNonNull;
  * This utility class provides Java NIO based replacement for some methods of
  * {@link org.apache.commons.io.FileUtils Common IO FileUtils} class.
  */
-public final class FileUtils {
+public final class FileUtils2 {
   private static final String DIRECTORY_CAN_NOT_BE_NULL = "Directory can not be null";
   private static final EnumSet<FileVisitOption> FOLLOW_LINKS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
 
-  private FileUtils() {
+  private FileUtils2() {
     // prevents instantiation
   }
 

@@ -38,7 +38,7 @@ import org.sonar.process.monitor.FileSystem;
 import static java.lang.String.format;
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
-import static org.sonar.process.FileUtils.deleteDirectory;
+import static org.sonar.process.FileUtils2.deleteDirectory;
 import static org.sonar.process.ProcessProperties.PATH_DATA;
 import static org.sonar.process.ProcessProperties.PATH_HOME;
 import static org.sonar.process.ProcessProperties.PATH_LOGS;
