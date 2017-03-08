@@ -20,87 +20,37 @@
 
 package org.sonar.application.config;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import org.sonar.process.ProcessId;
 import org.sonar.process.ProcessProperties;
 import org.sonar.process.Props;
 
-import static org.mockito.Mockito.mock;
-import static org.sonar.process.ProcessProperties.CLUSTER_ENABLED;
-
 public class TestAppSettings implements AppSettings {
-  private final Properties commandLineArguments;
-  private Props allProps;
-  private final static JdbcSettings jdbcSettings = mock(JdbcSettings.class);
 
-  private TestAppSettings(Properties commandLineArguments, Props allProps) {
-    this.commandLineArguments = commandLineArguments;
-    this.allProps = allProps;
+  private final Props properties;
+
+  public TestAppSettings() {
+    this.properties = new Props(new Properties());
+    ProcessProperties.completeDefaults(this.properties);
   }
 
-  public static TestAppSettings forCliArguments(Properties cliArguments) {
-    PropsBuilder propsBuilder = new PropsBuilder(cliArguments, jdbcSettings);
-    return new TestAppSettings(cliArguments, propsBuilder.build());
+  public TestAppSettings set(String key, String value) {
+    this.properties.set(key, value);
+    return this;
   }
 
   @Override
   public Props getProps() {
-    return allProps;
+    return properties;
   }
 
   @Override
   public Optional<String> getValue(String key) {
-    return Optional.ofNullable(allProps.value(key));
-  }
-
-  @Override
-  public boolean isClusterEnabled() {
-    return allProps.valueAsBoolean(CLUSTER_ENABLED, false);
-  }
-
-  @Override
-  public List<ProcessId> getEnabledProcesses() {
-    List<ProcessId> enabled = new ArrayList<>();
-    for (ProcessId processId : ProcessId.values()) {
-      switch (processId) {
-        case APP:
-          // this is the current process, ignore
-          break;
-        case ELASTICSEARCH:
-          if (isProcessEnabled(ProcessProperties.CLUSTER_SEARCH_DISABLED)) {
-            enabled.add(processId);
-          }
-          break;
-        case WEB_SERVER:
-          if (isProcessEnabled(ProcessProperties.CLUSTER_WEB_DISABLED)) {
-            enabled.add(processId);
-          }
-          break;
-        case COMPUTE_ENGINE:
-          if (isProcessEnabled(ProcessProperties.CLUSTER_CE_DISABLED)) {
-            enabled.add(processId);
-          }
-          break;
-        default:
-          // defensive safeguard
-          throw new IllegalArgumentException("Unsupported process: " + processId);
-      }
-    }
-    if (enabled.isEmpty()) {
-      throw new IllegalArgumentException("At least one process is required. All Elasticsearch, Compute Engine and Web Server have been disabled.");
-    }
-    return enabled;
+    return Optional.ofNullable(properties.value(key));
   }
 
   @Override
   public void reload() {
-    this.allProps = forCliArguments(commandLineArguments).allProps;
-  }
 
-  private boolean isProcessEnabled(String disabledPropertyKey) {
-    return !allProps.valueAsBoolean(ProcessProperties.CLUSTER_ENABLED) || !allProps.valueAsBoolean(disabledPropertyKey);
   }
 }

@@ -50,7 +50,7 @@ public class AppStateClusterImpl implements AppState, AutoCloseable {
 
   final HazelcastInstance hzInstance;
 
-  public AppStateClusterImpl(@Nonnull AppSettings appSettings) {
+  public AppStateClusterImpl(AppSettings appSettings) {
     ClusterProperties clusterProperties = new ClusterProperties(appSettings);
     clusterProperties.validate();
 

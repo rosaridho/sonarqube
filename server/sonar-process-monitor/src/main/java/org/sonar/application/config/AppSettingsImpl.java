@@ -19,13 +19,9 @@
  */
 package org.sonar.application.config;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import org.sonar.process.ProcessId;
-import org.sonar.process.ProcessProperties;
 import org.sonar.process.Props;
 
 import static java.lang.String.format;
@@ -37,7 +33,7 @@ import static org.sonar.process.ProcessProperties.PATH_TEMP;
 import static org.sonar.process.ProcessProperties.PATH_WEB;
 
 public class AppSettingsImpl implements AppSettings {
-  
+
   private final Properties commandLineArguments;
   private Props allProps;
 
@@ -59,49 +55,6 @@ public class AppSettingsImpl implements AppSettings {
   @Override
   public Optional<String> getValue(String key) {
     return Optional.ofNullable(allProps.value(key));
-  }
-
-  @Override
-  public boolean isClusterEnabled() {
-    return allProps.valueAsBoolean(CLUSTER_ENABLED, false);
-  }
-
-  @Override
-  public List<ProcessId> getEnabledProcesses() {
-    List<ProcessId> enabled = new ArrayList<>();
-    for (ProcessId processId : ProcessId.values()) {
-      switch (processId) {
-        case APP:
-          // this is the current process, ignore
-          break;
-        case ELASTICSEARCH:
-          if (isProcessEnabled(ProcessProperties.CLUSTER_SEARCH_DISABLED)) {
-            enabled.add(processId);
-          }
-          break;
-        case WEB_SERVER:
-          if (isProcessEnabled(ProcessProperties.CLUSTER_WEB_DISABLED)) {
-            enabled.add(processId);
-          }
-          break;
-        case COMPUTE_ENGINE:
-          if (isProcessEnabled(ProcessProperties.CLUSTER_CE_DISABLED)) {
-            enabled.add(processId);
-          }
-          break;
-        default:
-          // defensive safeguard
-          throw new IllegalArgumentException("Unsupported process: " + processId);
-      }
-    }
-    if (enabled.isEmpty()) {
-      throw new IllegalArgumentException("At least one process is required. All Elasticsearch, Compute Engine and Web Server have been disabled.");
-    }
-    return enabled;
-  }
-
-  private boolean isProcessEnabled(String disabledPropertyKey) {
-    return !allProps.valueAsBoolean(ProcessProperties.CLUSTER_ENABLED) || !allProps.valueAsBoolean(disabledPropertyKey);
   }
 
   @Override

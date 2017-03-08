@@ -17,17 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.application.config;
+package org.sonar.application;
 
-import java.util.Optional;
-import org.sonar.process.Props;
+import org.sonar.application.cluster.AppStateClusterImpl;
+import org.sonar.application.config.AppSettings;
+import org.sonar.application.config.AppSettingsHelper;
 
-public interface AppSettings {
+public class AppStateFactory {
 
-  Props getProps();
+  private final AppSettings settings;
 
-  Optional<String> getValue(String key);
+  public AppStateFactory(AppSettings settings) {
+    this.settings = settings;
+  }
 
-  void reload();
-
+  public AppState create() {
+    return AppSettingsHelper.isClusterEnabled(settings) ? new AppStateClusterImpl(settings) : new AppStateImpl();
+  }
 }

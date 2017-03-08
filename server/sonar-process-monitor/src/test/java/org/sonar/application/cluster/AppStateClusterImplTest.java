@@ -24,13 +24,11 @@ import com.hazelcast.core.ReplicatedMap;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.UUID;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.sonar.application.config.AppSettings;
 import org.sonar.application.config.TestAppSettings;
 import org.sonar.process.ProcessId;
 import org.sonar.process.ProcessProperties;
@@ -51,42 +49,35 @@ public class AppStateClusterImplTest {
 
   @Test
   public void test_cluster_properties() throws Exception {
-    Properties properties = new Properties();
-    properties.put(ProcessProperties.CLUSTER_ENABLED, "true");
-    properties.put(ProcessProperties.CLUSTER_NAME, "sonarqube");
-    properties.put(ProcessProperties.CLUSTER_PORT_AUTOINCREMENT, "true");
+    TestAppSettings settings = new TestAppSettings();
+    settings.set(ProcessProperties.CLUSTER_ENABLED, "true");
+    settings.set(ProcessProperties.CLUSTER_NAME, "sonarqube");
+    settings.set(ProcessProperties.CLUSTER_PORT_AUTOINCREMENT, "true");
 
-    AppSettings appSettings = TestAppSettings.forCliArguments(properties);
-
-    try (AppStateClusterImpl appStateCluster = new AppStateClusterImpl(appSettings)) {
-      assertThat(
-        appStateCluster.tryToLockWebLeader()
-      ).isEqualTo(true);
-      assertThat(
-        appStateCluster.tryToLockWebLeader()
-      ).isEqualTo(false);
+    try (AppStateClusterImpl appStateCluster = new AppStateClusterImpl(settings)) {
+      assertThat(appStateCluster.tryToLockWebLeader()).isEqualTo(true);
+      assertThat(appStateCluster.tryToLockWebLeader()).isEqualTo(false);
     }
 
-    properties.put(ProcessProperties.CLUSTER_ENABLED, "false");
-    appSettings = TestAppSettings.forCliArguments(properties);
+    settings.set(ProcessProperties.CLUSTER_ENABLED, "false");
 
     expectedException.expect(IllegalStateException.class);
     expectedException.expectMessage("Cluster is not enabled on this instance");
-    try (AppStateClusterImpl appStateCluster = new AppStateClusterImpl(appSettings)) {
-    }
+
+    new AppStateClusterImpl(settings);
   }
 
   @Test
   public void test_listeners() throws InterruptedException {
-    Properties properties = new Properties();
-    properties.put(ProcessProperties.CLUSTER_ENABLED, "true");
-    properties.put(ProcessProperties.CLUSTER_NAME, "sonarqube");
-    properties.put(ProcessProperties.CLUSTER_PORT_AUTOINCREMENT, "true");
-    AppSettings appSettings = TestAppSettings.forCliArguments(properties);
+    TestAppSettings settings = new TestAppSettings();
+    settings.set(ProcessProperties.CLUSTER_ENABLED, "true");
+    settings.set(ProcessProperties.CLUSTER_NAME, "sonarqube");
+    settings.set(ProcessProperties.CLUSTER_PORT_AUTOINCREMENT, "true");
+
     Object lock = new Object();
     List<ProcessId> operationalProcesses = new ArrayList<>();
 
-    try (AppStateClusterImpl appStateCluster = new AppStateClusterImpl(appSettings)) {
+    try (AppStateClusterImpl appStateCluster = new AppStateClusterImpl(settings)) {
       appStateCluster.addListener(processId -> {
         synchronized (lock) {
           operationalProcesses.add(processId);
@@ -109,17 +100,16 @@ public class AppStateClusterImplTest {
 
   @Test
   public void simulate_network_cluster() throws InterruptedException {
-    Properties properties = new Properties();
-    properties.put(ProcessProperties.CLUSTER_ENABLED, "true");
-    properties.put(ProcessProperties.CLUSTER_NAME, "sonarqube");
-    properties.put(ProcessProperties.CLUSTER_PORT_AUTOINCREMENT, "true");
-    properties.put(ProcessProperties.CLUSTER_INTERFACES, InetAddress.getLoopbackAddress().getHostAddress());
+    TestAppSettings settings = new TestAppSettings();
+    settings.set(ProcessProperties.CLUSTER_ENABLED, "true");
+    settings.set(ProcessProperties.CLUSTER_NAME, "sonarqube");
+    settings.set(ProcessProperties.CLUSTER_PORT_AUTOINCREMENT, "true");
+    settings.set(ProcessProperties.CLUSTER_INTERFACES, InetAddress.getLoopbackAddress().getHostAddress());
 
-    AppSettings appSettings = TestAppSettings.forCliArguments(properties);
     Object lock = new Object();
     List<ProcessId> operationalProcesses = new ArrayList<>();
 
-    try (AppStateClusterImpl appStateCluster = new AppStateClusterImpl(appSettings)) {
+    try (AppStateClusterImpl appStateCluster = new AppStateClusterImpl(settings)) {
       appStateCluster.addListener(processId -> {
         synchronized (lock) {
           operationalProcesses.add(processId);
@@ -127,22 +117,20 @@ public class AppStateClusterImplTest {
         }
       });
 
-      //HazelcastInstance hzInstance = HazelcastHelper.createHazelcastNode(appStateCluster);
+      // HazelcastInstance hzInstance = HazelcastHelper.createHazelcastNode(appStateCluster);
       HazelcastInstance hzInstance = HazelcastHelper.createHazelcastClient(appStateCluster);
       String uuid = UUID.randomUUID().toString();
       synchronized (lock) {
         ReplicatedMap<ClusterProcess, Boolean> replicatedMap = hzInstance.getReplicatedMap(OPERATIONAL_PROCESSES);
         replicatedMap.put(
           new ClusterProcess(uuid, ProcessId.ELASTICSEARCH),
-          Boolean.FALSE
-        );
+          Boolean.FALSE);
         lock.wait(1_000);
         assertThat(operationalProcesses).isEmpty();
 
         replicatedMap.replace(
           new ClusterProcess(uuid, ProcessId.ELASTICSEARCH),
-          Boolean.TRUE
-        );
+          Boolean.TRUE);
         lock.wait(1_000);
         assertThat(operationalProcesses).containsExactly(ProcessId.ELASTICSEARCH);
       }

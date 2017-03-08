@@ -20,21 +20,23 @@
 package org.sonar.application.config;
 
 import java.util.Properties;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
 
 public class CommandLineParserTest {
 
-  CommandLineParser parser = new CommandLineParser();
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
   @Test
   public void parseArguments() {
     System.setProperty("CommandLineParserTest.unused", "unused");
     System.setProperty("sonar.CommandLineParserTest.used", "used");
 
-    Properties p = parser.parseArguments(new String[] {"-Dsonar.foo=bar"});
+    Properties p = CommandLineParser.parseArguments(new String[] {"-Dsonar.foo=bar"});
 
     // test environment can already declare some system properties prefixed by "sonar."
     // so we can't test the exact number "2"
@@ -45,17 +47,15 @@ public class CommandLineParserTest {
   }
 
   @Test
-  public void argumentsToProperties() {
-    Properties p = parser.argumentsToProperties(new String[] {"-Dsonar.foo=bar", "-Dsonar.whitespace=foo bar"});
+  public void argumentsToProperties_throws_IAE_if_argument_does_not_start_with_minusD() {
+    Properties p = CommandLineParser.argumentsToProperties(new String[] {"-Dsonar.foo=bar", "-Dsonar.whitespace=foo bar"});
     assertThat(p).hasSize(2);
     assertThat(p.getProperty("sonar.foo")).isEqualTo("bar");
     assertThat(p.getProperty("sonar.whitespace")).isEqualTo("foo bar");
 
-    try {
-      parser.argumentsToProperties(new String[] {"-Dsonar.foo=bar", "sonar.bad=true"});
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage("Command-line argument must start with -D, for example -Dsonar.jdbc.username=sonar. Got: sonar.bad=true");
-    }
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("Command-line argument must start with -D, for example -Dsonar.jdbc.username=sonar. Got: sonar.bad=true");
+
+    CommandLineParser.argumentsToProperties(new String[] {"-Dsonar.foo=bar", "sonar.bad=true"});
   }
 }

@@ -21,17 +21,16 @@ package org.sonar.application;
 
 import java.io.IOException;
 import java.util.Properties;
-import org.sonar.application.cluster.AppStateClusterImpl;
 import org.sonar.application.config.AppSettings;
 import org.sonar.application.config.AppSettingsImpl;
 import org.sonar.application.config.CommandLineParser;
 import org.sonar.application.process.JavaCommandFactory;
 import org.sonar.application.process.JavaCommandFactoryImpl;
+import org.sonar.application.process.JavaProcessLauncher;
+import org.sonar.application.process.JavaProcessLauncherImpl;
 import org.sonar.application.process.StopRequestWatcher;
 import org.sonar.application.process.StopRequestWatcherImpl;
 import org.sonar.process.SystemExit;
-import org.sonar.application.process.JavaProcessLauncher;
-import org.sonar.application.process.JavaProcessLauncherImpl;
 
 public class App {
 
@@ -49,9 +48,7 @@ public class App {
     logging.configure(settings.getProps());
 
     JavaCommandFactory javaCommandFactory = new JavaCommandFactoryImpl(settings);
-    AppState state = settings.isClusterEnabled() ?
-      new AppStateClusterImpl(settings) :
-      new AppStateImpl();
+    AppState state = new AppStateFactory(settings).create();
 
     try (JavaProcessLauncher javaProcessLauncher = new JavaProcessLauncherImpl(fileSystem.getTempDir())) {
       Scheduler scheduler = new SchedulerImpl(settings, javaCommandFactory, javaProcessLauncher, state);
@@ -71,8 +68,7 @@ public class App {
   }
 
   public static void main(String... args) throws IOException {
-    CommandLineParser cli = new CommandLineParser();
-    Properties commandLineArguments = cli.parseArguments(args);
+    Properties commandLineArguments = CommandLineParser.parseArguments(args);
     new App().start(commandLineArguments);
   }
 

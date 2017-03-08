@@ -53,11 +53,11 @@ public final class ClusterProperties {
     enabled = appSettings.getProps().valueAsBoolean(ProcessProperties.CLUSTER_ENABLED);
     portAutoincrement = appSettings.getProps().valueAsBoolean(ProcessProperties.CLUSTER_PORT_AUTOINCREMENT);
     interfaces = extractInterfaces(
-      appSettings.getProps().value(ProcessProperties.CLUSTER_INTERFACES)
+      appSettings.getProps().value(ProcessProperties.CLUSTER_INTERFACES, "")
     );
     name = appSettings.getProps().value(ProcessProperties.CLUSTER_NAME);
     members = extractMembers(
-      appSettings.getProps().value(ProcessProperties.CLUSTER_MEMBERS)
+      appSettings.getProps().value(ProcessProperties.CLUSTER_MEMBERS, "")
     );
   }
 

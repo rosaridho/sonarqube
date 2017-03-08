@@ -21,7 +21,6 @@ package org.sonar.application;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -34,20 +33,20 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.mockito.Mockito;
-import org.sonar.application.config.AppSettings;
-import org.sonar.application.process.JavaCommandFactory;
-import org.sonar.process.ProcessId;
+import org.sonar.application.config.TestAppSettings;
 import org.sonar.application.process.JavaCommand;
+import org.sonar.application.process.JavaCommandFactory;
 import org.sonar.application.process.JavaProcessLauncher;
 import org.sonar.application.process.ProcessMonitor;
+import org.sonar.process.ProcessId;
+import org.sonar.process.ProcessProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sonar.process.ProcessId.COMPUTE_ENGINE;
 import static org.sonar.process.ProcessId.ELASTICSEARCH;
 import static org.sonar.process.ProcessId.WEB_SERVER;
@@ -64,7 +63,7 @@ public class SchedulerImplTest {
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
 
-  private AppSettings settings = mock(AppSettings.class, RETURNS_MOCKS);
+  private TestAppSettings settings = spy(new TestAppSettings());
   private TestJavaCommandFactory javaCommandFactory = new TestJavaCommandFactory();
   private TestJavaProcessLauncher processLauncher = new TestJavaProcessLauncher();
   private AppState appState = new AppStateImpl();
@@ -77,8 +76,7 @@ public class SchedulerImplTest {
 
   @Test
   public void start_and_stop_sequence_of_ES_WEB_CE_in_order() throws Exception {
-    // any order
-    when(settings.getEnabledProcesses()).thenReturn(Arrays.asList(COMPUTE_ENGINE, ELASTICSEARCH, WEB_SERVER));
+    enableAllProcesses();
     SchedulerImpl underTest = newScheduler();
     underTest.schedule();
 
@@ -115,6 +113,10 @@ public class SchedulerImplTest {
     underTest.awaitTermination();
   }
 
+  private void enableAllProcesses() {
+    settings.set(ProcessProperties.CLUSTER_ENABLED, "true");
+  }
+
   @Test
   public void all_processes_are_stopped_if_one_process_goes_down() throws Exception {
     Scheduler underTest = startAll();
@@ -132,7 +134,7 @@ public class SchedulerImplTest {
 
   @Test
   public void all_processes_are_stopped_if_one_process_fails_to_start() throws Exception {
-    when(settings.getEnabledProcesses()).thenReturn(Arrays.asList(COMPUTE_ENGINE, ELASTICSEARCH, WEB_SERVER));
+    enableAllProcesses();
     SchedulerImpl underTest = newScheduler();
     processLauncher.makeStartupFail = COMPUTE_ENGINE;
 
@@ -223,7 +225,7 @@ public class SchedulerImplTest {
   }
 
   private Scheduler startAll() throws InterruptedException {
-    when(settings.getEnabledProcesses()).thenReturn(Arrays.asList(COMPUTE_ENGINE, ELASTICSEARCH, WEB_SERVER));
+    enableAllProcesses();
     SchedulerImpl scheduler = newScheduler();
     scheduler.schedule();
     processLauncher.waitForProcess(ELASTICSEARCH).operational = true;

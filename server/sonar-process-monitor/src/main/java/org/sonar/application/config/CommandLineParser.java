@@ -25,10 +25,15 @@ import java.util.Map;
 import java.util.Properties;
 
 public class CommandLineParser {
+
+  private CommandLineParser() {
+    // prevent instantiation
+  }
+
   /**
    * Build properties from command-line arguments and system properties
    */
-  public Properties parseArguments(String[] args) {
+  public static Properties parseArguments(String[] args) {
     Properties props = argumentsToProperties(args);
 
     // complete with only the system properties that start with "sonar."
@@ -44,7 +49,7 @@ public class CommandLineParser {
   /**
    * Convert strings "-Dkey=value" to properties
    */
-  Properties argumentsToProperties(String[] args) {
+  static Properties argumentsToProperties(String[] args) {
     Properties props = new Properties();
     for (String arg : args) {
       if (!arg.startsWith("-D") || !arg.contains("=")) {
