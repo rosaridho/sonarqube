@@ -22,9 +22,16 @@ package org.sonar.application;
 import java.io.IOException;
 import java.util.Properties;
 import org.sonar.application.cluster.AppStateClusterImpl;
+import org.sonar.application.config.AppSettings;
+import org.sonar.application.config.AppSettingsImpl;
+import org.sonar.application.config.CommandLineParser;
+import org.sonar.application.process.JavaCommandFactory;
+import org.sonar.application.process.JavaCommandFactoryImpl;
+import org.sonar.application.process.StopRequestWatcher;
+import org.sonar.application.process.StopRequestWatcherImpl;
 import org.sonar.process.SystemExit;
-import org.sonar.process.monitor.JavaProcessLauncher;
-import org.sonar.process.monitor.JavaProcessLauncherImpl;
+import org.sonar.application.process.JavaProcessLauncher;
+import org.sonar.application.process.JavaProcessLauncherImpl;
 
 public class App {
 
