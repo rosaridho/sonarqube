@@ -29,7 +29,6 @@ import org.junit.rules.Timeout;
 import org.sonar.application.FileSystem;
 import org.sonar.application.Scheduler;
 import org.sonar.application.config.AppSettings;
-import org.sonar.application.process.StopRequestWatcherImpl;
 import org.sonar.process.ProcessCommands;
 import org.sonar.process.ProcessProperties;
 
@@ -79,7 +78,9 @@ public class StopRequestWatcherImplTest {
     verify(scheduler, timeout(1_000L)).terminate();
 
     underTest.stopWatching();
-    assertThat(underTest.isAlive()).isFalse();
+    while (underTest.isAlive()) {
+      Thread.sleep(1L);
+    }
   }
 
   @Test
@@ -104,7 +105,6 @@ public class StopRequestWatcherImplTest {
       Thread.sleep(1L);
     }
     assertThat(underTest.isAlive()).isFalse();
-
   }
 
   private void enableSetting(boolean b) {
