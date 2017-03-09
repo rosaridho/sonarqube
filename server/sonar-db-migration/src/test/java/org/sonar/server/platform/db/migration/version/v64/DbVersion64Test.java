@@ -21,12 +21,21 @@
 package org.sonar.server.platform.db.migration.version.v64;
 
 import org.junit.Test;
+import org.sonar.server.platform.db.migration.version.v63.DefaultOrganizationUuidImpl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMigrationCount;
 import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMinimumMigrationNumber;
 
 public class DbVersion64Test {
+
   private DbVersion64 underTest = new DbVersion64();
+
+  @Test
+  public void verify_support_components() {
+    assertThat(underTest.getSupportComponents())
+      .containsOnly(DefaultOrganizationUuidImpl.class);
+  }
 
   @Test
   public void migrationNumber_starts_at_1600() {
@@ -35,7 +44,7 @@ public class DbVersion64Test {
 
   @Test
   public void verify_migration_count() {
-    verifyMigrationCount(underTest, 8);
+    verifyMigrationCount(underTest, 9);
   }
 
 }

@@ -20,10 +20,18 @@
 
 package org.sonar.server.platform.db.migration.version.v64;
 
+import java.util.stream.Stream;
 import org.sonar.server.platform.db.migration.step.MigrationStepRegistry;
 import org.sonar.server.platform.db.migration.version.DbVersion;
+import org.sonar.server.platform.db.migration.version.v63.DefaultOrganizationUuidImpl;
 
 public class DbVersion64 implements DbVersion {
+
+  @Override
+  public Stream<Object> getSupportComponents() {
+    return Stream.of(DefaultOrganizationUuidImpl.class);
+  }
+
   @Override
   public void addSteps(MigrationStepRegistry registry) {
     registry
@@ -34,6 +42,7 @@ public class DbVersion64 implements DbVersion {
       .add(1604, "Make RULES_PROFILES.ORGANIZATION_UUID not nullable", MakeQualityProfileOrganizationUuidNotNullable.class)
       .add(1605, "Drop unique index on RULES_PROFILES.KEE", DropUniqueIndexOnQualityProfileKey.class)
       .add(1606, "Make RULES_PROFILES.ORGANIZATION_UUID and KEE unique", MakeQualityProfileOrganizationUuidAndKeyUnique.class)
-      .add(1607, "Create ORGANIZATION_MEMBERS table", CreateOrganizationMembersTable.class);
+      .add(1607, "Create ORGANIZATION_MEMBERS table", CreateOrganizationMembersTable.class)
+      .add(1608, "Populate ORGANIZATION_MEMBERS table", PopulateOrganizationMembersTable.class);
   }
 }
