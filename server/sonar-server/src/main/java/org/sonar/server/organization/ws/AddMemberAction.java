@@ -68,7 +68,7 @@ public class AddMemberAction implements OrganizationsAction {
       .setExampleValue(KEY_ORG_EXAMPLE_001);
 
     action
-      .createParam("login")
+      .createParam(PARAM_LOGIN)
       .setDescription("User login")
       .setRequired(true)
       .setExampleValue("ray.bradbury");
