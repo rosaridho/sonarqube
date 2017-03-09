@@ -29,11 +29,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.mockito.Mockito;
-import org.sonar.application.process.Lifecycle;
-import org.sonar.application.process.ProcessEventListener;
-import org.sonar.application.process.ProcessLifecycleListener;
-import org.sonar.application.process.ProcessMonitor;
-import org.sonar.application.process.SQProcess;
 import org.sonar.process.ProcessId;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -202,10 +197,10 @@ public class SQProcessTest {
       assertThat(stopperThread.isAlive()).isTrue();
 
       // wait for the stopper thread to ask graceful stop
-      while (underTest.getState() != Lifecycle.State.STOPPING) {
+      while (!testProcess.askedForStop) {
         Thread.sleep(1L);
       }
-      assertThat(testProcess.askedForStop).isTrue();
+      assertThat(underTest.getState()).isEqualTo(Lifecycle.State.STOPPING);
       verify(listener).onProcessState(A_PROCESS_ID, Lifecycle.State.STOPPING);
 
       // process stopped

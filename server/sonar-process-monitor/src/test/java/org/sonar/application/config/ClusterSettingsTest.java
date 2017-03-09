@@ -78,13 +78,23 @@ public class ClusterSettingsTest {
   }
 
   @Test
-  public void throw_MessageException_if_internal_property_for_web_leader_is_configured() {
+  public void accept_throws_MessageException_if_internal_property_for_web_leader_is_configured() {
     TestAppSettings settings = new TestAppSettings();
     settings.set(ProcessProperties.CLUSTER_ENABLED, "true");
     settings.set("sonar.cluster.web.startupLeader", "true");
 
     expectedException.expect(MessageException.class);
     expectedException.expectMessage("Property [sonar.cluster.web.startupLeader] is forbidden");
+
+    new ClusterSettings().accept(settings.getProps());
+  }
+
+  @Test
+  public void accept_does_nothing_if_cluster_is_disabled() {
+    TestAppSettings settings = new TestAppSettings();
+    settings.set(ProcessProperties.CLUSTER_ENABLED, "false");
+    // this property is supposed to fail if cluster is enabled
+    settings.set("sonar.cluster.web.startupLeader", "true");
 
     new ClusterSettings().accept(settings.getProps());
   }

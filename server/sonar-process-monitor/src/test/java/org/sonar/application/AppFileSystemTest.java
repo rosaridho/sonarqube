@@ -94,11 +94,14 @@ public class AppFileSystemTest {
     Object tempDirKey = getFileKey(tempDir);
     File fileInTempDir = new File(tempDir, "someFile.txt");
     assertThat(fileInTempDir.createNewFile()).isTrue();
+    File subDirInTempDir = new File(tempDir, "subDir");
+    assertThat(subDirInTempDir.mkdir()).isTrue();
 
     underTest.reset();
 
     assertThat(tempDir).exists();
     assertThat(fileInTempDir).doesNotExist();
+    assertThat(subDirInTempDir).doesNotExist();
     assertThat(getFileKey(tempDir)).isEqualTo(tempDirKey);
   }
 
