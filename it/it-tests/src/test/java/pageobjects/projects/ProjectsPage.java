@@ -47,6 +47,10 @@ public class ProjectsPage {
     return new ProjectItem(element);
   }
 
+  public ProjectItem getProjectByIdx(Integer idx) {
+    return new ProjectItem(getProjects().get(idx));
+  }
+
   public FacetItem getFacetByProperty(String facetProperty) {
     SelenideElement element = getFacets().find(Condition.attribute("data-key", facetProperty));
     return new FacetItem(element);
@@ -55,6 +59,12 @@ public class ProjectsPage {
   public ProjectsPage shouldHaveTotal(int total) {
     // warning - number is localized
     $("#projects-total").shouldHave(text(String.valueOf(total)));
+    return this;
+  }
+
+  public ProjectsPage searchProject(String search) {
+    SelenideElement searchInput = $(".projects-facet-search input");
+    searchInput.setValue("").sendKeys(search);
     return this;
   }
 }
