@@ -28,6 +28,7 @@ import org.sonar.process.MessageException;
 import org.sonar.process.Props;
 
 import static java.lang.String.format;
+import static org.sonar.process.ProcessProperties.CLUSTER_ENABLED;
 import static org.sonar.process.ProcessProperties.PATH_DATA;
 import static org.sonar.process.ProcessProperties.PATH_LOGS;
 import static org.sonar.process.ProcessProperties.PATH_TEMP;
@@ -66,6 +67,7 @@ public class AppReloaderImpl implements AppReloader {
     verifyUnchanged(oldProps, newProps, PATH_WEB);
     verifyUnchanged(oldProps, newProps, PATH_LOGS);
     verifyUnchanged(oldProps, newProps, PATH_TEMP);
+    verifyUnchanged(oldProps, newProps, CLUSTER_ENABLED);
   }
 
   private static void verifyUnchanged(Props initialProps, Props newProps, String propKey) {

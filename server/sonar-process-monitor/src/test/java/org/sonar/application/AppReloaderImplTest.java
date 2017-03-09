@@ -80,15 +80,26 @@ public class AppReloaderImplTest {
   }
 
   @Test
-  public void throw_MessageException_if_some_settings_cant_be_changed() throws IOException {
-    AppSettings settings = new TestAppSettings()
-      .set(ProcessProperties.PATH_DATA, "data");
+  public void throw_MessageException_if_path_properties_are_changed() throws IOException {
+    verifyFailureIfPropertyValueChanged(ProcessProperties.PATH_DATA);
+    verifyFailureIfPropertyValueChanged(ProcessProperties.PATH_LOGS);
+    verifyFailureIfPropertyValueChanged(ProcessProperties.PATH_TEMP);
+    verifyFailureIfPropertyValueChanged(ProcessProperties.PATH_WEB);
+  }
+
+  @Test
+  public void throw_MessageException_if_cluster_mode_changed() throws IOException {
+    verifyFailureIfPropertyValueChanged(ProcessProperties.CLUSTER_ENABLED);
+  }
+
+  private void verifyFailureIfPropertyValueChanged(String propertyKey) throws IOException {
+    AppSettings settings = new TestAppSettings().set(propertyKey, "val1");
     AppSettings newSettings = new TestAppSettings()
-      .set(ProcessProperties.PATH_DATA, "another_directory");
+      .set(propertyKey, "val2");
     when(settingsLoader.load()).thenReturn(newSettings);
 
     expectedException.expect(MessageException.class);
-    expectedException.expectMessage("Property [sonar.path.data] cannot be changed on restart: [data] => [another_directory]");
+    expectedException.expectMessage("Property [" + propertyKey + "] cannot be changed on restart: [val1] => [val2]");
 
     underTest.reload(settings);
 

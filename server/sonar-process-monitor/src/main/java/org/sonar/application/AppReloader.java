@@ -23,10 +23,14 @@ import java.io.IOException;
 import org.sonar.application.config.AppSettings;
 
 /**
- * Reload settings when a server restart is requested. 
+ * Reload settings, reset logging and file system when a
+ * server restart has been requested.
  */
 public interface AppReloader {
 
+  /**
+   * This method is called when server is down.
+   */
   void reload(AppSettings settings) throws IOException;
 
 }
