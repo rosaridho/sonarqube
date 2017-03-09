@@ -26,7 +26,6 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -48,7 +47,7 @@ public final class ClusterProperties {
   private final List<String> interfaces;
   private final String name;
 
-  ClusterProperties(@Nonnull AppSettings appSettings) {
+  ClusterProperties(AppSettings appSettings) {
     port = appSettings.getProps().valueAsInt(ProcessProperties.CLUSTER_PORT);
     enabled = appSettings.getProps().valueAsBoolean(ProcessProperties.CLUSTER_ENABLED);
     portAutoincrement = appSettings.getProps().valueAsBoolean(ProcessProperties.CLUSTER_PORT_AUTOINCREMENT);

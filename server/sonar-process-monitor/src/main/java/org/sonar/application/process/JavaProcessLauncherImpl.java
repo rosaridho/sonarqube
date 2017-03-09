@@ -100,12 +100,12 @@ public class JavaProcessLauncherImpl implements JavaProcessLauncher {
     return processBuilder;
   }
 
-  private String buildJavaPath() {
+  private static String buildJavaPath() {
     String separator = System.getProperty("file.separator");
     return new File(new File(System.getProperty("java.home")), "bin" + separator + "java").getAbsolutePath();
   }
 
-  private List<String> buildClasspath(JavaCommand javaCommand) {
+  private static List<String> buildClasspath(JavaCommand javaCommand) {
     String pathSeparator = System.getProperty("path.separator");
     return Arrays.asList("-cp", String.join(pathSeparator, javaCommand.getClasspath()));
   }

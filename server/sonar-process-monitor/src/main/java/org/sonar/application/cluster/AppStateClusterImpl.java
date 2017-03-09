@@ -140,6 +140,11 @@ public class AppStateClusterImpl implements AppState, AutoCloseable {
   }
 
   @Override
+  public void reset() {
+    throw new IllegalStateException("state reset is not supported in cluster mode");
+  }
+
+  @Override
   public void close() {
     if (hzInstance != null) {
       operationalProcesses.removeEntryListener(listenerUuid);

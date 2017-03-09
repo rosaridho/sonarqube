@@ -22,6 +22,9 @@ package org.sonar.application;
 import java.io.IOException;
 import org.sonar.application.config.AppSettings;
 
+/**
+ * Reload settings when a server restart is requested. 
+ */
 public interface AppReloader {
 
   void reload(AppSettings settings) throws IOException;

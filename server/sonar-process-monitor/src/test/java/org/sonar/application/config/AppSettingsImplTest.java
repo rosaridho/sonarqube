@@ -19,29 +19,27 @@
  */
 package org.sonar.application.config;
 
-import java.util.Optional;
+import java.util.Properties;
+import org.junit.Test;
 import org.sonar.process.Props;
 
-public class AppSettingsImpl implements AppSettings {
+import static org.assertj.core.api.Assertions.assertThat;
 
-  private Props props;
+public class AppSettingsImplTest {
 
-  AppSettingsImpl(Props props) {
-    this.props = props;
-  }
+  @Test
+  public void reload_updates_properties() {
+    Props initialProps = new Props(new Properties());
+    initialProps.set("foo", "bar");
+    Props newProps = new Props(new Properties());
+    newProps.set("foo", "baz");
+    newProps.set("newProp", "newVal");
 
-  @Override
-  public Props getProps() {
-    return props;
-  }
+    AppSettingsImpl underTest = new AppSettingsImpl(initialProps);
+    underTest.reload(newProps);
 
-  @Override
-  public Optional<String> getValue(String key) {
-    return Optional.ofNullable(props.value(key));
-  }
-
-  @Override
-  public void reload(Props copy) {
-    this.props = copy;
+    assertThat(underTest.getValue("foo").get()).isEqualTo("baz");
+    assertThat(underTest.getValue("newProp").get()).isEqualTo("newVal");
+    assertThat(underTest.getProps().rawProperties()).hasSize(2);
   }
 }

@@ -25,17 +25,17 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.FileAppender;
-import org.sonar.application.config.ClusterParameters;
+import org.sonar.application.config.AppSettings;
 import org.sonar.application.process.StreamGobbler;
 import org.sonar.process.ProcessId;
-import org.sonar.process.Props;
+import org.sonar.process.ProcessProperties;
 import org.sonar.process.logging.LogLevelConfig;
 import org.sonar.process.logging.LogbackHelper;
 import org.sonar.process.logging.RootLoggerConfig;
 
 import static org.slf4j.Logger.ROOT_LOGGER_NAME;
-import static org.sonar.process.logging.RootLoggerConfig.newRootLoggerConfigBuilder;
 import static org.sonar.application.process.StreamGobbler.LOGGER_GOBBLER;
+import static org.sonar.process.logging.RootLoggerConfig.newRootLoggerConfigBuilder;
 
 /**
  * Configure logback for the APP process.
@@ -118,16 +118,21 @@ public class AppLogging {
     .build();
 
   private final LogbackHelper helper = new LogbackHelper();
+  private final AppSettings appSettings;
 
-  public LoggerContext configure(Props props) {
+  public AppLogging(AppSettings appSettings) {
+    this.appSettings = appSettings;
+  }
+
+  public LoggerContext configure() {
     LoggerContext ctx = helper.getRootContext();
     ctx.reset();
 
     helper.enableJulChangePropagation(ctx);
 
     configureConsole(ctx);
-    if (helper.isAllLogsToConsoleEnabled(props) || !props.valueAsBoolean("sonar.wrapped", false)) {
-      configureWithLogbackWritingToFile(props, ctx);
+    if (helper.isAllLogsToConsoleEnabled(appSettings.getProps()) || !appSettings.getProps().valueAsBoolean("sonar.wrapped", false)) {
+      configureWithLogbackWritingToFile(ctx);
     } else {
       configureWithWrapperWritingToFile(ctx);
     }
@@ -136,10 +141,9 @@ public class AppLogging {
         .rootLevelFor(ProcessId.APP)
         .immutableLevel("com.hazelcast",
           Level.toLevel(
-            props.value(ClusterParameters.HAZELCAST_LOG_LEVEL.getName(),  ClusterParameters.HAZELCAST_LOG_LEVEL.getDefaultValue())
-          )
-        )
-        .build(), props);
+            appSettings.getProps().nonNullValue(ProcessProperties.HAZELCAST_LOG_LEVEL)))
+        .build(),
+      appSettings.getProps());
 
     return ctx;
   }
@@ -162,12 +166,12 @@ public class AppLogging {
    * Therefor, APP's System.out (and System.err) are <strong>not</strong> copied to sonar.log by the wrapper and
    * printing to sonar.log must be done at logback level.
    */
-  private void configureWithLogbackWritingToFile(Props props, LoggerContext ctx) {
+  private void configureWithLogbackWritingToFile(LoggerContext ctx) {
     // configure all logs (ie. root logger) to be written to sonar.log and also to the console with formatting
     // in practice, this will be only APP's own logs as logs from sub processes LOGGER_GOBBLER and LOGGER_GOBBLER
     // is configured below to be detached from root
     // so, this will make all APP's log to be both written to sonar.log and visible in the console
-    configureRootWithLogbackWritingToFile(props, ctx);
+    configureRootWithLogbackWritingToFile(ctx);
 
     // if option -Dsonar.log.console=true has been set, sub processes will write their logs to their own files but also
     // copy them to their System.out.
@@ -201,10 +205,10 @@ public class AppLogging {
     configureGobbler(ctx);
   }
 
-  private void configureRootWithLogbackWritingToFile(Props props, LoggerContext ctx) {
+  private void configureRootWithLogbackWritingToFile(LoggerContext ctx) {
     Logger rootLogger = ctx.getLogger(ROOT_LOGGER_NAME);
     String appLogPattern = helper.buildLogPattern(APP_ROOT_LOGGER_CONFIG);
-    FileAppender<ILoggingEvent> fileAppender = helper.newFileAppender(ctx, props, APP_ROOT_LOGGER_CONFIG, appLogPattern);
+    FileAppender<ILoggingEvent> fileAppender = helper.newFileAppender(ctx, appSettings.getProps(), APP_ROOT_LOGGER_CONFIG, appLogPattern);
     rootLogger.addAppender(fileAppender);
     rootLogger.addAppender(createAppConsoleAppender(ctx, appLogPattern));
   }

@@ -39,19 +39,17 @@ public class App {
   public void start(String[] cliArguments) throws IOException {
     AppSettingsLoader settingsLoader = new AppSettingsLoaderImpl(cliArguments);
     AppSettings settings = settingsLoader.load();
-    AppReloader appReloader = new AppReloaderImpl(settingsLoader);
-    AppFileSystem fileSystem = new AppFileSystem(settings.getProps());
-    fileSystem.verifyProps();
-    fileSystem.reset();
-
-    AppLogging logging = new AppLogging();
-    logging.configure(settings.getProps());
-
+    AppFileSystem fileSystem = new AppFileSystem(settings);
+    AppState appState = new AppStateFactory(settings).create();
+    AppLogging logging = new AppLogging(settings);
+    AppReloader appReloader = new AppReloaderImpl(settingsLoader, fileSystem, appState, logging);
     JavaCommandFactory javaCommandFactory = new JavaCommandFactoryImpl(settings);
-    AppState state = new AppStateFactory(settings).create();
+
+    fileSystem.reset();
+    logging.configure();
 
     try (JavaProcessLauncher javaProcessLauncher = new JavaProcessLauncherImpl(fileSystem.getTempDir())) {
-      Scheduler scheduler = new SchedulerImpl(settings, appReloader, javaCommandFactory, javaProcessLauncher, state);
+      Scheduler scheduler = new SchedulerImpl(settings, appReloader, javaCommandFactory, javaProcessLauncher, appState);
 
       // intercepts CTRL-C
       Runtime.getRuntime().addShutdownHook(new ShutdownHook(scheduler));

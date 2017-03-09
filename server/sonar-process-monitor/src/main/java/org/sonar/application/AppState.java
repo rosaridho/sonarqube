@@ -30,4 +30,6 @@ public interface AppState {
   void setOperational(ProcessId processId);
 
   boolean tryToLockWebLeader();
+
+  void reset();
 }

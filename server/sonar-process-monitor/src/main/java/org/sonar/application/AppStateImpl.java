@@ -53,4 +53,10 @@ public class AppStateImpl implements AppState {
   public boolean tryToLockWebLeader() {
     return webLeaderLocked.compareAndSet(false, true);
   }
+
+  @Override
+  public void reset() {
+    webLeaderLocked.set(false);
+    processes.clear();
+  }
 }

@@ -48,6 +48,9 @@ public class ProcessProperties {
   public static final String JDBC_MAX_WAIT = "sonar.jdbc.maxWait";
   public static final String JDBC_MIN_EVICTABLE_IDLE_TIME_MILLIS = "sonar.jdbc.minEvictableIdleTimeMillis";
   public static final String JDBC_TIME_BETWEEN_EVICTION_RUNS_MILLIS = "sonar.jdbc.timeBetweenEvictionRunsMillis";
+  public static final String JDBC_EMBEDDED_PORT = "sonar.embeddedDatabase.port";
+  public static final String JDBC_EMBEDDED_PORT_DEFAULT_VALUE = "9092";
+
 
   public static final String PATH_DATA = "sonar.path.data";
   public static final String PATH_HOME = "sonar.path.home";
@@ -117,6 +120,11 @@ public class ProcessProperties {
       "-XX:+HeapDumpOnOutOfMemoryError");
     defaults.put(SEARCH_JAVA_ADDITIONAL_OPTS, "");
 
+    defaults.put(PATH_DATA, "data");
+    defaults.put(PATH_LOGS, "logs");
+    defaults.put(PATH_TEMP, "temp");
+    defaults.put(PATH_WEB, "web");
+
     defaults.put(WEB_JAVA_OPTS, "-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError");
     defaults.put(WEB_JAVA_ADDITIONAL_OPTS, "");
     defaults.put(CE_JAVA_OPTS, "-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError");
@@ -127,6 +135,7 @@ public class ProcessProperties {
     defaults.put(JDBC_MAX_WAIT, "5000");
     defaults.put(JDBC_MIN_EVICTABLE_IDLE_TIME_MILLIS, "600000");
     defaults.put(JDBC_TIME_BETWEEN_EVICTION_RUNS_MILLIS, "30000");
+    defaults.put(JDBC_EMBEDDED_PORT, JDBC_EMBEDDED_PORT_DEFAULT_VALUE);
 
     defaults.put(CLUSTER_ENABLED, "false");
     defaults.put(CLUSTER_CE_DISABLED, "false");
@@ -138,6 +147,7 @@ public class ProcessProperties {
     defaults.put(CLUSTER_PORT, "9003");
     defaults.put(CLUSTER_PORT_AUTOINCREMENT, "false");
     defaults.put(HAZELCAST_LOG_LEVEL, "WARN");
+
     return defaults;
   }
 

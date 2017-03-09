@@ -21,7 +21,7 @@ package org.sonar.application;
 
 import org.sonar.application.cluster.AppStateClusterImpl;
 import org.sonar.application.config.AppSettings;
-import org.sonar.application.config.AppSettingsHelper;
+import org.sonar.application.config.ClusterSettings;
 
 public class AppStateFactory {
 
@@ -32,6 +32,6 @@ public class AppStateFactory {
   }
 
   public AppState create() {
-    return AppSettingsHelper.isClusterEnabled(settings) ? new AppStateClusterImpl(settings) : new AppStateImpl();
+    return ClusterSettings.isClusterEnabled(settings) ? new AppStateClusterImpl(settings) : new AppStateImpl();
   }
 }

@@ -25,7 +25,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Properties;
+import java.util.function.Consumer;
+import org.slf4j.LoggerFactory;
 import org.sonar.process.ConfigurationUtils;
 import org.sonar.process.ProcessProperties;
 import org.sonar.process.Props;
@@ -36,14 +39,20 @@ public class AppSettingsLoaderImpl implements AppSettingsLoader {
 
   private final File homeDir;
   private final String[] cliArguments;
+  private final Consumer<Props>[] consumers;
 
   public AppSettingsLoaderImpl(String[] cliArguments) {
-    this(cliArguments, detectHomeDir());
+    this(cliArguments, detectHomeDir(), new FileSystemSettings(), new JdbcSettings(), new ClusterSettings());
   }
 
-  AppSettingsLoaderImpl(String[] cliArguments, File homeDir) {
+  AppSettingsLoaderImpl(String[] cliArguments, File homeDir, Consumer<Props>... consumers) {
     this.cliArguments = cliArguments;
     this.homeDir = homeDir;
+    this.consumers = consumers;
+  }
+
+  File getHomeDir() {
+    return homeDir;
   }
 
   @Override
@@ -58,21 +67,24 @@ public class AppSettingsLoaderImpl implements AppSettingsLoader {
     // are accessed
     Props props = new Props(p);
     ProcessProperties.completeDefaults(props);
+    Arrays.stream(consumers).forEach(c -> c.accept(props));
 
-    // check JDBC properties and set path to driver
-    new JdbcSettings().checkAndComplete(homeDir, props);
     return new AppSettingsImpl(props);
   }
 
   private static File detectHomeDir() {
     try {
-      File appJar = new File(PropsBuilder.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+      File appJar = new File(AppSettingsLoaderImpl.class.getProtectionDomain().getCodeSource().getLocation().toURI());
       return appJar.getParentFile().getParentFile();
     } catch (URISyntaxException e) {
       throw new IllegalStateException("Cannot detect path of main jar file", e);
     }
   }
 
+  /**
+   * Loads the configuration file ${homeDir}/conf/sonar.properties.
+   * An empty {@link Properties} is returned if the file does not exist.
+   */
   private static Properties loadPropertiesFile(File homeDir) {
     Properties p = new Properties();
     File propsFile = new File(homeDir, "conf/sonar.properties");
@@ -82,6 +94,8 @@ public class AppSettingsLoaderImpl implements AppSettingsLoader {
       } catch (IOException e) {
         throw new IllegalStateException("Cannot open file " + propsFile, e);
       }
+    } else {
+      LoggerFactory.getLogger(AppSettingsLoaderImpl.class).warn("Configuration file not found: {}", propsFile);
     }
     return p;
   }

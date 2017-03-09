@@ -22,14 +22,18 @@ package org.sonar.application.config;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import org.sonar.process.ProcessId;
 import org.sonar.process.ProcessProperties;
+import org.sonar.process.Props;
 
 import static org.sonar.process.ProcessProperties.CLUSTER_ENABLED;
 
-public class AppSettingsHelper {
-  private AppSettingsHelper() {
-    // prevent instantiation
+public class ClusterSettings implements Consumer<Props> {
+
+  @Override
+  public void accept(Props props) {
+    // TODO verify that at least one process is enabled
   }
 
   public static boolean isClusterEnabled(AppSettings settings) {
@@ -53,5 +57,4 @@ public class AppSettingsHelper {
     }
     return enabled;
   }
-
 }

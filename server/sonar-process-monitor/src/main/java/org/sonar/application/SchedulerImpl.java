@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.application.config.AppSettings;
-import org.sonar.application.config.AppSettingsHelper;
+import org.sonar.application.config.ClusterSettings;
 import org.sonar.application.process.JavaCommand;
 import org.sonar.application.process.JavaCommandFactory;
 import org.sonar.application.process.JavaProcessLauncher;
@@ -83,7 +83,7 @@ public class SchedulerImpl implements Scheduler, ProcessEventListener, ProcessLi
     }
     processesById.clear();
 
-    for (ProcessId processId : AppSettingsHelper.getEnabledProcesses(settings)) {
+    for (ProcessId processId : ClusterSettings.getEnabledProcesses(settings)) {
       SQProcess process = SQProcess.builder(processId)
         .addProcessLifecycleListener(this)
         .addEventListener(this)
@@ -174,7 +174,12 @@ public class SchedulerImpl implements Scheduler, ProcessEventListener, ProcessLi
       LOG.info("Stopping SonarQube");
     }
     stopAll();
-    // TODO cleanup ?
+    if (stopperThread != null) {
+      stopperThread.interrupt();
+    }
+    if (restarterThread != null) {
+      restarterThread.interrupt();
+    }
     keepAlive.countDown();
   }
 

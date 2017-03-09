@@ -28,4 +28,5 @@ public interface AppSettings {
 
   Optional<String> getValue(String key);
 
+  void reload(Props copy);
 }

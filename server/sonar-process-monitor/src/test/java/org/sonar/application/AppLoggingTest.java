@@ -33,7 +33,6 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Properties;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,8 +40,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.LoggerFactory;
+import org.sonar.application.config.AppSettings;
+import org.sonar.application.config.TestAppSettings;
 import org.sonar.process.ProcessProperties;
-import org.sonar.process.Props;
 import org.sonar.process.logging.LogbackHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,13 +58,13 @@ public class AppLoggingTest {
 
   private File logDir;
 
-  private Props props = new Props(new Properties());
-  private AppLogging underTest = new AppLogging();
+  private AppSettings settings = new TestAppSettings();
+  private AppLogging underTest = new AppLogging(settings);
 
   @Before
   public void setUp() throws Exception {
     logDir = temp.newFolder();
-    props.set(ProcessProperties.PATH_LOGS, logDir.getAbsolutePath());
+    settings.getProps().set(ProcessProperties.PATH_LOGS, logDir.getAbsolutePath());
   }
 
   @AfterClass
@@ -76,7 +76,7 @@ public class AppLoggingTest {
   public void no_writing_to_sonar_log_file_when_running_from_sonar_script() {
     emulateRunFromSonarScript();
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     ctx.getLoggerList().forEach(AppLoggingTest::verifyNoFileAppender);
   }
@@ -85,7 +85,7 @@ public class AppLoggingTest {
   public void root_logger_only_writes_to_console_with_formatting_when_running_from_sonar_script() {
     emulateRunFromSonarScript();
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     Logger rootLogger = ctx.getLogger(ROOT_LOGGER_NAME);
     ConsoleAppender<ILoggingEvent> consoleAppender = (ConsoleAppender<ILoggingEvent>) rootLogger.getAppender("APP_CONSOLE");
@@ -97,7 +97,7 @@ public class AppLoggingTest {
   public void gobbler_logger_writes_to_console_without_formatting_when_running_from_sonar_script() {
     emulateRunFromSonarScript();
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     Logger gobblerLogger = ctx.getLogger(LOGGER_GOBBLER);
     verifyGobblerConsoleAppender(gobblerLogger);
@@ -108,7 +108,7 @@ public class AppLoggingTest {
   public void root_logger_writes_to_console_with_formatting_and_to_sonar_log_file_when_running_from_command_line() {
     emulateRunFromCommandLine(false);
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     Logger rootLogger = ctx.getLogger(ROOT_LOGGER_NAME);
     verifyAppConsoleAppender(rootLogger.getAppender("APP_CONSOLE"));
@@ -126,7 +126,7 @@ public class AppLoggingTest {
   public void gobbler_logger_writes_to_console_without_formatting_when_running_from_command_line() {
     emulateRunFromCommandLine(false);
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     Logger gobblerLogger = ctx.getLogger(LOGGER_GOBBLER);
     verifyGobblerConsoleAppender(gobblerLogger);
@@ -137,7 +137,7 @@ public class AppLoggingTest {
   public void root_logger_writes_to_console_with_formatting_and_to_sonar_log_file_when_running_from_ITs() {
     emulateRunFromCommandLine(true);
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     Logger rootLogger = ctx.getLogger(ROOT_LOGGER_NAME);
     verifyAppConsoleAppender(rootLogger.getAppender("APP_CONSOLE"));
@@ -154,7 +154,7 @@ public class AppLoggingTest {
   public void gobbler_logger_writes_to_console_without_formatting_when_running_from_ITs() {
     emulateRunFromCommandLine(true);
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     Logger gobblerLogger = ctx.getLogger(LOGGER_GOBBLER);
     verifyGobblerConsoleAppender(gobblerLogger);
@@ -163,9 +163,9 @@ public class AppLoggingTest {
 
   @Test
   public void configure_no_rotation_on_sonar_file() {
-    props.set("sonar.log.rollingPolicy", "none");
+    settings.getProps().set("sonar.log.rollingPolicy", "none");
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     Logger rootLogger = ctx.getLogger(ROOT_LOGGER_NAME);
     Appender<ILoggingEvent> appender = rootLogger.getAppender("file_sonar");
@@ -176,80 +176,80 @@ public class AppLoggingTest {
 
   @Test
   public void default_level_for_root_logger_is_INFO() {
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     verifyRootLogLevel(ctx, Level.INFO);
   }
 
   @Test
   public void root_logger_level_changes_with_global_property() {
-    props.set("sonar.log.level", "TRACE");
+    settings.getProps().set("sonar.log.level", "TRACE");
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     verifyRootLogLevel(ctx, Level.TRACE);
   }
 
   @Test
   public void root_logger_level_changes_with_app_property() {
-    props.set("sonar.log.level.app", "TRACE");
+    settings.getProps().set("sonar.log.level.app", "TRACE");
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     verifyRootLogLevel(ctx, Level.TRACE);
   }
 
   @Test
   public void root_logger_level_is_configured_from_app_property_over_global_property() {
-    props.set("sonar.log.level", "TRACE");
-    props.set("sonar.log.level.app", "DEBUG");
+    settings.getProps().set("sonar.log.level", "TRACE");
+    settings.getProps().set("sonar.log.level.app", "DEBUG");
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     verifyRootLogLevel(ctx, Level.DEBUG);
   }
 
   @Test
   public void root_logger_level_changes_with_app_property_and_is_case_insensitive() {
-    props.set("sonar.log.level.app", "debug");
+    settings.getProps().set("sonar.log.level.app", "debug");
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
 
     verifyRootLogLevel(ctx, Level.DEBUG);
   }
 
   @Test
   public void default_to_INFO_if_app_property_has_invalid_value() {
-    props.set("sonar.log.level.app", "DodoDouh!");
+    settings.getProps().set("sonar.log.level.app", "DodoDouh!");
 
-    LoggerContext ctx = underTest.configure(props);
+    LoggerContext ctx = underTest.configure();
     verifyRootLogLevel(ctx, Level.INFO);
   }
 
   @Test
   public void fail_with_IAE_if_global_property_unsupported_level() {
-    props.set("sonar.log.level", "ERROR");
+    settings.getProps().set("sonar.log.level", "ERROR");
 
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage("log level ERROR in property sonar.log.level is not a supported value (allowed levels are [TRACE, DEBUG, INFO])");
 
-    underTest.configure(props);
+    underTest.configure();
   }
 
   @Test
   public void fail_with_IAE_if_app_property_unsupported_level() {
-    props.set("sonar.log.level.app", "ERROR");
+    settings.getProps().set("sonar.log.level.app", "ERROR");
 
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage("log level ERROR in property sonar.log.level.app is not a supported value (allowed levels are [TRACE, DEBUG, INFO])");
 
-    underTest.configure(props);
+    underTest.configure();
   }
 
   @Test
   public void no_info_log_from_hazelcast() throws IOException {
-    props.set(ProcessProperties.CLUSTER_ENABLED, "true");
-    underTest.configure(props);
+    settings.getProps().set(ProcessProperties.CLUSTER_ENABLED, "true");
+    underTest.configure();
 
     assertThat(
       LoggerFactory.getLogger("com.hazelcast").isInfoEnabled()).isEqualTo(false);
@@ -257,9 +257,9 @@ public class AppLoggingTest {
 
   @Test
   public void configure_logging_for_hazelcast() throws IOException {
-    props.set(ProcessProperties.CLUSTER_ENABLED, "true");
-    props.set(ProcessProperties.HAZELCAST_LOG_LEVEL, "INFO");
-    underTest.configure(props);
+    settings.getProps().set(ProcessProperties.CLUSTER_ENABLED, "true");
+    settings.getProps().set(ProcessProperties.HAZELCAST_LOG_LEVEL, "INFO");
+    underTest.configure();
 
     assertThat(
       LoggerFactory.getLogger("com.hazelcast").isInfoEnabled()).isEqualTo(true);
@@ -268,12 +268,12 @@ public class AppLoggingTest {
   }
 
   private void emulateRunFromSonarScript() {
-    props.set("sonar.wrapped", "true");
+    settings.getProps().set("sonar.wrapped", "true");
   }
 
   private void emulateRunFromCommandLine(boolean withAllLogsPrintedToConsole) {
     if (withAllLogsPrintedToConsole) {
-      props.set("sonar.log.console", "true");
+      settings.getProps().set("sonar.log.console", "true");
     }
   }
 

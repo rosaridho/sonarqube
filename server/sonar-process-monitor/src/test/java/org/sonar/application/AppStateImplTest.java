@@ -20,8 +20,6 @@
 package org.sonar.application;
 
 import org.junit.Test;
-import org.sonar.application.AppStateImpl;
-import org.sonar.application.AppStateListener;
 import org.sonar.process.ProcessId;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,5 +53,27 @@ public class AppStateImplTest {
 
     verify(listener).onAppStateOperational(ProcessId.ELASTICSEARCH);
     verifyNoMoreInteractions(listener);
+  }
+
+  @Test
+  public void tryToLockWebLeader_returns_true_if_first_call() {
+    assertThat(underTest.tryToLockWebLeader()).isTrue();
+
+    // next calls return false
+    assertThat(underTest.tryToLockWebLeader()).isFalse();
+    assertThat(underTest.tryToLockWebLeader()).isFalse();
+  }
+
+  @Test
+  public void reset_initializes_all_flags() {
+    underTest.setOperational(ProcessId.ELASTICSEARCH);
+    assertThat(underTest.tryToLockWebLeader()).isTrue();
+
+    underTest.reset();
+
+    assertThat(underTest.isOperational(ProcessId.ELASTICSEARCH)).isFalse();
+    assertThat(underTest.isOperational(ProcessId.COMPUTE_ENGINE)).isFalse();
+    assertThat(underTest.isOperational(ProcessId.WEB_SERVER)).isFalse();
+    assertThat(underTest.tryToLockWebLeader()).isTrue();
   }
 }

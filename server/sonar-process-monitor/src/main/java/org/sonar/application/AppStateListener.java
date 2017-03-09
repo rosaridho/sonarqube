@@ -21,6 +21,7 @@ package org.sonar.application;
 
 import org.sonar.process.ProcessId;
 
+@FunctionalInterface
 public interface AppStateListener {
 
   /**

@@ -22,6 +22,7 @@ package org.sonar.application.config;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
@@ -34,19 +35,11 @@ import org.sonar.process.Props;
 
 import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.apache.commons.lang.StringUtils.isNotEmpty;
+import static org.sonar.process.ProcessProperties.JDBC_EMBEDDED_PORT;
+import static org.sonar.process.ProcessProperties.JDBC_EMBEDDED_PORT_DEFAULT_VALUE;
 import static org.sonar.process.ProcessProperties.JDBC_URL;
 
-public class JdbcSettings {
-
-  private static final String PROP_URL = "sonar.jdbc.url";
-  private static final String PROP_DRIVER = "sonar.jdbc.driverClassName";
-  private static final String PROP_USER = "sonar.jdbc.username";
-
-  private static final String PROP_USER_DEFAULT_VALUE = "";
-  private static final String PROP_PASSWORD = "sonar.jdbc.password";
-  private static final String PROP_PASSWORD_DEFAULT_VALUE = "";
-  private static final String PROP_EMBEDDED_PORT = "sonar.embeddedDatabase.port";
-  private static final String PROP_EMBEDDED_PORT_DEFAULT_VALUE = "9092";
+public class JdbcSettings implements Consumer<Props> {
 
   enum Provider {
     H2("lib/jdbc/h2"), SQLSERVER("lib/jdbc/mssql"), MYSQL("lib/jdbc/mysql"), ORACLE("extensions/jdbc-driver/oracle"),
@@ -59,7 +52,13 @@ public class JdbcSettings {
     }
   }
 
-  public void checkAndComplete(File homeDir, Props props) {
+  @Override
+  public void accept(Props props) {
+    File homeDir = props.nonNullValueAsFile(ProcessProperties.PATH_HOME);
+    checkAndComplete(homeDir, props);
+  }
+
+  private void checkAndComplete(File homeDir, Props props) {
     Provider provider = resolveProviderAndEnforceNonnullJdbcUrl(props);
     String url = props.value(JDBC_URL);
     checkUrlParameters(provider, url);
@@ -85,18 +84,18 @@ public class JdbcSettings {
 
   Provider resolveProviderAndEnforceNonnullJdbcUrl(Props props) {
     String url = props.value(JDBC_URL);
-    String embeddedDatabasePort = props.value(PROP_EMBEDDED_PORT);
+    String embeddedDatabasePort = props.value(JDBC_EMBEDDED_PORT);
 
     if (isNotEmpty(embeddedDatabasePort)) {
       String correctUrl = buildH2JdbcUrl(embeddedDatabasePort);
       warnIfUrlIsSet(embeddedDatabasePort, url, correctUrl);
-      props.set(PROP_URL, correctUrl);
+      props.set(JDBC_URL, correctUrl);
       return Provider.H2;
     }
 
     if (isEmpty(url)) {
-      props.set(PROP_URL, buildH2JdbcUrl(PROP_EMBEDDED_PORT_DEFAULT_VALUE));
-      props.set(PROP_EMBEDDED_PORT, PROP_EMBEDDED_PORT_DEFAULT_VALUE);
+      props.set(JDBC_URL, buildH2JdbcUrl(JDBC_EMBEDDED_PORT_DEFAULT_VALUE));
+      props.set(JDBC_EMBEDDED_PORT, JDBC_EMBEDDED_PORT_DEFAULT_VALUE);
       return Provider.H2;
     }
 
@@ -132,17 +131,17 @@ public class JdbcSettings {
       if (expectedUrl.equals(existing)) {
         logger.warn("To change H2 database port, only property '{}' should be set (which current value is '{}'). " +
           "Remove property '{}' from configuration to remove this warning.",
-          PROP_EMBEDDED_PORT, port,
-          PROP_URL);
+          JDBC_EMBEDDED_PORT, port,
+          JDBC_URL);
       } else {
         logger.warn("Both '{}' and '{}' properties are set. " +
           "The value of property '{}' ('{}') is not consistent with the value of property '{}' ('{}'). " +
           "The value of property '{}' will be ignored and value '{}' will be used instead. " +
           "To remove this warning, either remove property '{}' if your intent was to use the embedded H2 database, otherwise remove property '{}'.",
-          PROP_EMBEDDED_PORT, PROP_URL,
-          PROP_URL, existing, PROP_EMBEDDED_PORT, port,
-          PROP_URL, expectedUrl,
-          PROP_URL, PROP_EMBEDDED_PORT);
+          JDBC_EMBEDDED_PORT, JDBC_URL,
+          JDBC_URL, existing, JDBC_EMBEDDED_PORT, port,
+          JDBC_URL, expectedUrl,
+          JDBC_URL, JDBC_EMBEDDED_PORT);
       }
     }
   }

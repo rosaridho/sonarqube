@@ -25,9 +25,13 @@ import java.util.Properties;
 import org.sonar.process.ProcessProperties;
 import org.sonar.process.Props;
 
+/**
+ * Simple implementation of {@link AppSettings} that loads
+ * the default values defined by {@link ProcessProperties}.
+ */
 public class TestAppSettings implements AppSettings {
 
-  private final Props properties;
+  private Props properties;
 
   public TestAppSettings() {
     this.properties = new Props(new Properties());
@@ -47,5 +51,10 @@ public class TestAppSettings implements AppSettings {
   @Override
   public Optional<String> getValue(String key) {
     return Optional.ofNullable(properties.value(key));
+  }
+
+  @Override
+  public void reload(Props copy) {
+    this.properties = copy;
   }
 }
