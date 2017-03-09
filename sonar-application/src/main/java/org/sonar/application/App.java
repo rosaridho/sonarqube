@@ -20,10 +20,9 @@
 package org.sonar.application;
 
 import java.io.IOException;
-import java.util.Properties;
 import org.sonar.application.config.AppSettings;
-import org.sonar.application.config.AppSettingsImpl;
-import org.sonar.application.config.CommandLineParser;
+import org.sonar.application.config.AppSettingsLoader;
+import org.sonar.application.config.AppSettingsLoaderImpl;
 import org.sonar.application.process.JavaCommandFactory;
 import org.sonar.application.process.JavaCommandFactoryImpl;
 import org.sonar.application.process.JavaProcessLauncher;
@@ -37,9 +36,10 @@ public class App {
   private final SystemExit systemExit = new SystemExit();
   private StopRequestWatcher stopRequestWatcher;
 
-  public void start(Properties cliArguments) throws IOException {
-    AppSettings settings = AppSettingsImpl.forCliArguments(cliArguments);
-
+  public void start(String[] cliArguments) throws IOException {
+    AppSettingsLoader settingsLoader = new AppSettingsLoaderImpl(cliArguments);
+    AppSettings settings = settingsLoader.load();
+    AppReloader appReloader = new AppReloaderImpl(settingsLoader);
     AppFileSystem fileSystem = new AppFileSystem(settings.getProps());
     fileSystem.verifyProps();
     fileSystem.reset();
@@ -51,7 +51,7 @@ public class App {
     AppState state = new AppStateFactory(settings).create();
 
     try (JavaProcessLauncher javaProcessLauncher = new JavaProcessLauncherImpl(fileSystem.getTempDir())) {
-      Scheduler scheduler = new SchedulerImpl(settings, javaCommandFactory, javaProcessLauncher, state);
+      Scheduler scheduler = new SchedulerImpl(settings, appReloader, javaCommandFactory, javaProcessLauncher, state);
 
       // intercepts CTRL-C
       Runtime.getRuntime().addShutdownHook(new ShutdownHook(scheduler));
@@ -68,8 +68,7 @@ public class App {
   }
 
   public static void main(String... args) throws IOException {
-    Properties commandLineArguments = CommandLineParser.parseArguments(args);
-    new App().start(commandLineArguments);
+    new App().start(args);
   }
 
   private class ShutdownHook extends Thread {

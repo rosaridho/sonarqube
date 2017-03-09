@@ -48,9 +48,4 @@ public class TestAppSettings implements AppSettings {
   public Optional<String> getValue(String key) {
     return Optional.ofNullable(properties.value(key));
   }
-
-  @Override
-  public void reload() {
-
-  }
 }

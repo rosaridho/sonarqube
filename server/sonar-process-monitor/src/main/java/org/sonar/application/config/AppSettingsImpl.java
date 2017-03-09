@@ -19,68 +19,28 @@
  */
 package org.sonar.application.config;
 
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import org.sonar.process.Props;
-
-import static java.lang.String.format;
-import static org.sonar.process.ProcessProperties.CLUSTER_ENABLED;
-import static org.sonar.process.ProcessProperties.PATH_DATA;
-import static org.sonar.process.ProcessProperties.PATH_HOME;
-import static org.sonar.process.ProcessProperties.PATH_LOGS;
-import static org.sonar.process.ProcessProperties.PATH_TEMP;
-import static org.sonar.process.ProcessProperties.PATH_WEB;
 
 public class AppSettingsImpl implements AppSettings {
 
-  private final Properties commandLineArguments;
-  private Props allProps;
+  private Props props;
 
-  private AppSettingsImpl(Properties commandLineArguments, Props allProps) {
-    this.commandLineArguments = commandLineArguments;
-    this.allProps = allProps;
-  }
-
-  public static AppSettingsImpl forCliArguments(Properties cliArguments) {
-    PropsBuilder propsBuilder = new PropsBuilder(cliArguments, new JdbcSettings());
-    return new AppSettingsImpl(cliArguments, propsBuilder.build());
+  AppSettingsImpl(Props props) {
+    this.props = props;
   }
 
   @Override
   public Props getProps() {
-    return allProps;
+    return props;
   }
 
   @Override
   public Optional<String> getValue(String key) {
-    return Optional.ofNullable(allProps.value(key));
+    return Optional.ofNullable(props.value(key));
   }
 
-  @Override
-  public void reload() {
-    AppSettingsImpl reloaded = forCliArguments(commandLineArguments);
-    ensureUnchangedProperties(reloaded.allProps);
-    this.allProps = reloaded.allProps;
-  }
-
-  private void ensureUnchangedProperties(Props newProps) {
-    verifyUnchanged(newProps,
-      PATH_HOME,
-      PATH_DATA,
-      PATH_WEB,
-      PATH_LOGS,
-      PATH_TEMP,
-      CLUSTER_ENABLED);
-  }
-
-  private void verifyUnchanged(Props newProps, String... keys) {
-    for (String key : keys) {
-      String initialValue = allProps.value(key);
-      String newValue = newProps.value(key);
-      if (!Objects.equals(newValue, initialValue)) {
-        throw new IllegalStateException(format("Change of property '%s' is not supported on restart ('%s'=> '%s')", key, initialValue, newValue));
-      }
-    }
+  public void reload(Props copy) {
+    this.props = copy;
   }
 }

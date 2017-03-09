@@ -44,7 +44,6 @@ import org.sonar.process.ProcessProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonar.process.ProcessId.COMPUTE_ENGINE;
@@ -63,7 +62,8 @@ public class SchedulerImplTest {
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
 
-  private TestAppSettings settings = spy(new TestAppSettings());
+  private AppReloader appReloader = mock(AppReloader.class);
+  private TestAppSettings settings = new TestAppSettings();
   private TestJavaCommandFactory javaCommandFactory = new TestJavaCommandFactory();
   private TestJavaProcessLauncher processLauncher = new TestJavaProcessLauncher();
   private AppState appState = new AppStateImpl();
@@ -187,7 +187,7 @@ public class SchedulerImplTest {
     }
 
     // restarting
-    verify(settings, timeout(10_000)).reload();
+    verify(appReloader, timeout(10_000)).reload(settings);
     processLauncher.waitForProcessAlive(ELASTICSEARCH);
     processLauncher.waitForProcessAlive(COMPUTE_ENGINE);
     processLauncher.waitForProcessAlive(WEB_SERVER);
@@ -206,7 +206,7 @@ public class SchedulerImplTest {
   @Test
   public void restart_stops_all_if_new_settings_are_not_allowed() throws Exception {
     Scheduler underTest = startAll();
-    doThrow(new IllegalStateException("reload error")).when(settings).reload();
+    doThrow(new IllegalStateException("reload error")).when(appReloader).reload(settings);
 
     processLauncher.waitForProcess(WEB_SERVER).askedForRestart = true;
 
@@ -220,7 +220,7 @@ public class SchedulerImplTest {
   }
 
   private SchedulerImpl newScheduler() {
-    return new SchedulerImpl(settings, javaCommandFactory, processLauncher, appState)
+    return new SchedulerImpl(settings, appReloader, javaCommandFactory, processLauncher, appState)
       .setProcessWatcherDelayMs(1L);
   }
 

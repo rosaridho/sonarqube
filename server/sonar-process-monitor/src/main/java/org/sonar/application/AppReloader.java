@@ -17,15 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.application.config;
+package org.sonar.application;
 
-import java.util.Optional;
-import org.sonar.process.Props;
+import java.io.IOException;
+import org.sonar.application.config.AppSettings;
 
-public interface AppSettings {
+public interface AppReloader {
 
-  Props getProps();
-
-  Optional<String> getValue(String key);
+  void reload(AppSettings settings) throws IOException;
 
 }

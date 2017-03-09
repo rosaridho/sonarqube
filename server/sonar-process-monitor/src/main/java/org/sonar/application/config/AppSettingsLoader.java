@@ -19,13 +19,8 @@
  */
 package org.sonar.application.config;
 
-import java.util.Optional;
-import org.sonar.process.Props;
+public interface AppSettingsLoader {
 
-public interface AppSettings {
-
-  Props getProps();
-
-  Optional<String> getValue(String key);
+  AppSettings load();
 
 }

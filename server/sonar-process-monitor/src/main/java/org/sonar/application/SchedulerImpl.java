@@ -44,6 +44,7 @@ public class SchedulerImpl implements Scheduler, ProcessEventListener, ProcessLi
   private static final Logger LOG = LoggerFactory.getLogger(SchedulerImpl.class);
 
   private final AppSettings settings;
+  private final AppReloader appReloader;
   private final JavaCommandFactory javaCommandFactory;
   private final JavaProcessLauncher javaProcessLauncher;
   private final AppState appState;
@@ -59,9 +60,11 @@ public class SchedulerImpl implements Scheduler, ProcessEventListener, ProcessLi
   private RestarterThread restarterThread;
   private long processWatcherDelayMs = SQProcess.DEFAULT_WATCHER_DELAY_MS;
 
-  public SchedulerImpl(AppSettings settings, JavaCommandFactory javaCommandFactory, JavaProcessLauncher javaProcessLauncher,
+  public SchedulerImpl(AppSettings settings, AppReloader appReloader, JavaCommandFactory javaCommandFactory,
+    JavaProcessLauncher javaProcessLauncher,
     AppState appState) {
     this.settings = settings;
+    this.appReloader = appReloader;
     this.javaCommandFactory = javaCommandFactory;
     this.javaProcessLauncher = javaProcessLauncher;
     this.appState = appState;
@@ -253,7 +256,7 @@ public class SchedulerImpl implements Scheduler, ProcessEventListener, ProcessLi
     @Override
     public void run() {
       try {
-        settings.reload();
+        appReloader.reload(settings);
         schedule();
       } catch (Exception e) {
         LOG.error("Fail to restart", e);
