@@ -19,7 +19,10 @@
  */
 package org.sonar.application.config;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.sonar.process.MessageException;
 import org.sonar.process.ProcessProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +31,9 @@ import static org.sonar.process.ProcessId.ELASTICSEARCH;
 import static org.sonar.process.ProcessId.WEB_SERVER;
 
 public class ClusterSettingsTest {
+
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
   @Test
   public void test_isClusterEnabled() {
@@ -69,5 +75,17 @@ public class ClusterSettingsTest {
     settings.set(ProcessProperties.CLUSTER_SEARCH_DISABLED, "true");
 
     assertThat(ClusterSettings.getEnabledProcesses(settings)).containsOnly(COMPUTE_ENGINE, WEB_SERVER);
+  }
+
+  @Test
+  public void throw_MessageException_if_internal_property_for_web_leader_is_configured() {
+    TestAppSettings settings = new TestAppSettings();
+    settings.set(ProcessProperties.CLUSTER_ENABLED, "true");
+    settings.set("sonar.cluster.web.startupLeader", "true");
+
+    expectedException.expect(MessageException.class);
+    expectedException.expectMessage("Property [sonar.cluster.web.startupLeader] is forbidden");
+
+    new ClusterSettings().accept(settings.getProps());
   }
 }

@@ -23,21 +23,33 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import org.sonar.process.MessageException;
 import org.sonar.process.ProcessId;
 import org.sonar.process.ProcessProperties;
 import org.sonar.process.Props;
 
+import static java.lang.String.format;
 import static org.sonar.process.ProcessProperties.CLUSTER_ENABLED;
+import static org.sonar.process.ProcessProperties.CLUSTER_WEB_LEADER;
 
 public class ClusterSettings implements Consumer<Props> {
 
   @Override
   public void accept(Props props) {
-    // TODO verify that at least one process is enabled
+    if (!isClusterEnabled(props)) {
+      return;
+    }
+    if (props.value(CLUSTER_WEB_LEADER) != null) {
+      throw new MessageException(format("Property [%s] is forbidden", CLUSTER_WEB_LEADER));
+    }
   }
 
   public static boolean isClusterEnabled(AppSettings settings) {
-    return settings.getProps().valueAsBoolean(CLUSTER_ENABLED);
+    return isClusterEnabled(settings.getProps());
+  }
+
+  private static boolean isClusterEnabled(Props props) {
+    return props.valueAsBoolean(CLUSTER_ENABLED);
   }
 
   public static List<ProcessId> getEnabledProcesses(AppSettings settings) {
